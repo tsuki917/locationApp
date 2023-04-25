@@ -2,6 +2,7 @@ import Image from 'next/image'
 import { Inter } from 'next/font/google'
 import io from "socket.io-client";
 import { SocketAddress } from 'net';
+import Map from "../component/Map"
 
 
 const socket = io("http://localhost:5000");
@@ -13,7 +14,10 @@ socket.on('connection',()=>{
 export default function Home() {
   return (
      <div>
-      test
+      <div id='map'></div>
+     <Map/>
      </div>
+
+     
   );
 }
