@@ -1,43 +1,25 @@
+import { GoogleMap, LoadScript } from "@react-google-maps/api";
 
-import React, { Component } from 'react';
-import { GoogleApiWrapper, Map, Marker } from 'google-maps-react';
+const containerStyle = {
+  width: "800px",
+  height: "400px",
+};
 
-class GoogleMap extends Component {
-  state = {
-    lat: null,
-    lng: null
-  }
+const center = {
+  lat: 35.69575,
+  lng: 139.77521,
+};
 
-  componentDidMount() {
-    navigator.geolocation.getCurrentPosition((position) => {
-      this.setState({
-        lat: position.coords.latitude,
-        lng: position.coords.longitude
-      });
-      console.log(position.coords);
-    },
-    (err) => {
-      console.log(err);
-    })
-  }
+const MyComponent = () => {
+  return (
+    <LoadScript googleMapsApiKey="AIzaSyAheiUVYAXMXnpaIjFQCczhVUUEe39NhLc">
+      <GoogleMap
+        mapContainerStyle={containerStyle}
+        center={center}
+        zoom={17}
+      ></GoogleMap>
+    </LoadScript>
+  );
+};
 
-  render() {
-    return (
-      <Map
-        google = { this.props.google }
-        zoom = { 14 }
-        center = {{ lat: this.state.lat, lng: this.state.lng }}
-        initialCenter = {{ lat: this.state.lat, lng: this.state.lng }}
-      >
-        <Marker
-          title = { "現在地" }
-          position = {{ lat: this.state.lat, lng: this.state.lng }}
-        />
-      </Map>
-    );
-  }
-}
-
-export default GoogleApiWrapper({
-  apiKey: ("<Google MapのAPIキーをここにコピペ>")
-})(GoogleMap);
+export default MyComponent;
