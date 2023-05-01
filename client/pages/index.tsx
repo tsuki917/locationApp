@@ -15,7 +15,7 @@ export default function Home() {
   return (
      <div>
       <div id='map'></div>
-     <Map/>
+     <Map lat={0} lng={0}/>
      </div>
 
      
