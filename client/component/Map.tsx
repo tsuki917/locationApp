@@ -1,12 +1,15 @@
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
 import { GetServerSideProps } from "next";
+import { type } from "os";
 import { useEffect, useState } from "react";
+import { io } from "socket.io-client";
 const containerStyle = {
   width: "800px",
   height: "400px",
 };
 
 
+const socket = io("http://localhost:5000");
 
 
 
@@ -15,47 +18,110 @@ type prop = {
   lng: number
 }
 
-const MyComponent = (props: prop) => {
-  const [position, setPosition] = useState<prop>({ lat: props.lat, lng: props.lng });
+type socketDataType = {
+  id: String,
+  name: String,
+  position: {
+    lat: number,
+    lng: number
+  }
+}
+
+const MyComponent = ({lat, lng}: prop) => {
+  let zoom;
+
+  const [name, setName] = useState("");
+  const [socketData, setSocketData] = useState<socketDataType>({ id: "",name: "noName", position: { lat:0, lng: 0}});
+  console.log("hoge",socketData);
+  
+  //位置情報の初期化
   useEffect(() => {
-    navigator.geolocation.getCurrentPosition((position)=>{
-      setPosition({
-        lat:position.coords.latitude,
-        lng:position.coords.longitude
+    navigator.geolocation.getCurrentPosition((position) => {
+      setSocketData({
+        ...socketData, position: {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        }
       }),
-      ()=>console.log("error");
+      () => console.log("error");
     });
-
-
-  },[]);
+    
+    socket.on("init", (initId: String) => {
+      
+      const storeData: socketDataType = {
+        id:initId,
+        name: socketData.name,
+        position: { lat: socketData.position.lat, lng: socketData.position.lng },
+        
+      };
   
-  
+      console.log("storeData")
+      console.log(storeData);
+      setSocketData(storeData);
+      socket.emitWithAck("init_res", storeData);
+    });
+  }, [socketData]);
+
+  useEffect(() => {
+
+    socket.emitWithAck("changeData", socketData);
+  }, [socketData]);
+
+  const handleName = () => {
+    if (name !== '') {
+      setSocketData({ ...socketData, name: name })
+      setName("");
+      console.log("move");
+    }
+  }
 
   const getPosition = () => {
-   
-    navigator.geolocation.getCurrentPosition((position)=>{
-      setPosition({
-        lat:position.coords.latitude,
-        lng:position.coords.longitude
-      }),
-      ()=>console.log("error");
+
+    navigator.geolocation.getCurrentPosition((position) => {
+    setSocketData({id:socketData.id,name:socketData.name,position:{lat:position.coords.latitude,lng:position.coords.longitude}}),
+        () => console.log("error");
     });
+    console.log("getPosition")
+    console.log(socketData);
   }
+
+  const sendPosition = () => {
+    socket.emitWithAck("send_position", socketData);
+    console.log(socketData);
+    console.log("送信");
+  }
+
+
+
+  // const startSendPosition = () => {
+  //   console.log("start");
+  //   setInterval(sendPosition, 5000);
+  // }
+
+
+
 
 
 
   return (
     <div>
+      <div id="name">
+        {socketData.name}
+      </div>
+      <input type="text" placeholder="名前" value={name} onChange={(e) => setName(e.target.value)} />
+      <button onClick={() => handleName()}>送信</button>
       <LoadScript googleMapsApiKey="AIzaSyAheiUVYAXMXnpaIjFQCczhVUUEe39NhLc">
         <GoogleMap
           mapContainerStyle={containerStyle}
-          center={position}
+          center={socketData.position}
           zoom={20}
         >
-          <Marker position={position}/>
         </GoogleMap>
       </LoadScript>
       <button onClick={getPosition}>位置情報取得</button>
+      <br />
+      {/* <button onClick={startSendPosition}>位置情報送信を開始</button> */}
+
     </div>
   );
 };
@@ -66,41 +132,21 @@ export default MyComponent;
 
 
 
-export const getServerSideProps: GetServerSideProps = async () => {
-  let myPosition:prop={
-    lat:0,
-    lng:0
-  };
-  navigator.geolocation.getCurrentPosition(
-    function (position) {
-      myPosition.lat=position.coords.latitude;
-      myPosition.lng=position.coords.longitude;
-    }, () => console.log("error"));
+// export const getServerSideProps: GetServerSideProps = async () => {
+//   let myPosition: prop = {
+//     lat: 0,
+//     lng: 0
+//   };
+//   navigator.geolocation.getCurrentPosition(
+//     function (position) {
+//       myPosition.lat = position.coords.latitude;
+//       myPosition.lng = position.coords.longitude;
+//     }, () => console.log("error"));
 
+  
 
+//   return {
+//     props: myPosition,
+//   };
+// };
 
-
-  return {
-    props: myPosition,
-  };
-};
-
-//この関数に問題あり propを位置情報取得した後の値を入れてもreturnするときにはもとに戻っている。
-// function getPositionFun() {
-//     let pos:prop={
-//       lat:35,
-//       lng:136
-//     };
-//     navigator.geolocation.getCurrentPosition(
-//      function (position) {
-//       pos.lat = position.coords.latitude;
-//       pos.lng = position.coords.longitude;
-
-      
-//     }, () => {
-//       console.log("error");
-//     });
-//     console.log(pos);
-//     return pos;
-
-// }
