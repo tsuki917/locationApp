@@ -1,6 +1,4 @@
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
-import { GetServerSideProps } from "next";
-import { type } from "os";
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 const containerStyle = {
@@ -29,13 +27,14 @@ type socketDataType = {
 
 const MyComponent = ({lat, lng}: prop) => {
   let zoom;
-
+  let position = {}
   const [name, setName] = useState("");
   const [socketData, setSocketData] = useState<socketDataType>({ id: "",name: "noName", position: { lat:0, lng: 0}});
-  console.log("hoge",socketData);
+  console.log("hoge");
   
   //位置情報の初期化
   useEffect(() => {
+    console.log("firstEffect")
     navigator.geolocation.getCurrentPosition((position) => {
       setSocketData({
         ...socketData, position: {
@@ -45,9 +44,11 @@ const MyComponent = ({lat, lng}: prop) => {
       }),
       () => console.log("error");
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
     
-    socket.on("init", (initId: String) => {
-      
+    socket.once("init", (initId: String) => {
+      console.log("init");
       const storeData: socketDataType = {
         id:initId,
         name: socketData.name,
@@ -57,13 +58,18 @@ const MyComponent = ({lat, lng}: prop) => {
   
       console.log("storeData")
       console.log(storeData);
-      setSocketData(storeData);
-      socket.emitWithAck("init_res", storeData);
+      setSocketData({...socketData,id:initId});
+      setTimeout(() => {
+        console.log("timeoutconsole")
+        console.log(socketData);
+        socket.emitWithAck("init_res", storeData);
+      }, 3000);
     });
-  }, [socketData]);
+
 
   useEffect(() => {
-
+    console.log("change");
+    console.log(socketData)
     socket.emitWithAck("changeData", socketData);
   }, [socketData]);
 
@@ -81,7 +87,7 @@ const MyComponent = ({lat, lng}: prop) => {
     setSocketData({id:socketData.id,name:socketData.name,position:{lat:position.coords.latitude,lng:position.coords.longitude}}),
         () => console.log("error");
     });
-    console.log("getPosition")
+    console.log("getPosition");
     console.log(socketData);
   }
 
@@ -120,7 +126,7 @@ const MyComponent = ({lat, lng}: prop) => {
       </LoadScript>
       <button onClick={getPosition}>位置情報取得</button>
       <br />
-      {/* <button onClick={startSendPosition}>位置情報送信を開始</button> */}
+      <button onClick={()=>console.log(socketData)}>位置情報送信を開始</button>
 
     </div>
   );
