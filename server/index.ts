@@ -10,23 +10,23 @@ const io = new Server(server, {
         origin: ["http://localhost:3000"],
     },
 });
-type positionData = {
-    id:String,
-    name: String,
+type socketDataType = {
+    id: string,
+    name: string,
     position: {
-        lat: number,
-        lng: number
+      lat: number,
+      lng: number
     }
-}
+  }
 const PORT = 5000;
-const socketData_array: positionData[] = [];
+const socketData_array: socketDataType[] = [];
 io.on("connection", (socket) => {
     console.log("クライアントと接続");
     const socket_id = socket.id;
-    
+    socketData_array.push({name:'noName',position:{lat:0,lng:0},id:socket_id});
     socket.emit("init",socket_id);
-    socket.on("init_res",(init_res_data)=>{
-        socketData_array.push(init_res_data);
+    socket.on("init_res",(init_res_data:socketDataType)=>{
+        console.log("successfully send id")
     });
 
     socket.on("send_position", (data) => {
@@ -45,7 +45,8 @@ io.on("connection", (socket) => {
 
     });
 
-    socket.on("changeData",(newData)=>{
+    socket.on("changeData",(newData:socketDataType)=>{
+        if(newData)
         console.log("newData");
         console.log(newData);
     });

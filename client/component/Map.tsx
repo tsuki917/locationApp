@@ -1,4 +1,5 @@
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
+import { SocketType } from "dgram";
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 const containerStyle = {
@@ -17,53 +18,42 @@ type prop = {
 }
 
 type socketDataType = {
-  id: String,
-  name: String,
+  id: string,
+  name: string,
   position: {
     lat: number,
     lng: number
   }
 }
 
-const MyComponent = ({lat, lng}: prop) => {
-  let zoom;
-  let position = {}
+const MyComponent = () => {
   const [name, setName] = useState("");
-  const [socketData, setSocketData] = useState<socketDataType>({ id: "",name: "noName", position: { lat:0, lng: 0}});
+  const [socketData, setSocketData] = useState<socketDataType>({ id: '',name: "noName", position: {lat:0,lng:0}});
+  const [id,setId] = useState<string>('');
   console.log("hoge");
   
   //位置情報の初期化
   useEffect(() => {
     console.log("firstEffect")
-    navigator.geolocation.getCurrentPosition((position) => {
-      setSocketData({
-        ...socketData, position: {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        }
-      }),
+    navigator.geolocation.getCurrentPosition((getPositionData) => {
+      setSocketData((prevData:socketDataType)=>({
+        ...prevData,position:{lat:getPositionData.coords.latitude,lng:getPositionData.coords.longitude}
+      })
+
+      
+       
+      
+      )
+      ,
       () => console.log("error");
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
-    
-    socket.once("init", (initId: String) => {
+    socket.on("init", (initId: string) => {
       console.log("init");
-      const storeData: socketDataType = {
-        id:initId,
-        name: socketData.name,
-        position: { lat: socketData.position.lat, lng: socketData.position.lng },
-        
-      };
-  
-      console.log("storeData")
-      console.log(storeData);
-      setSocketData({...socketData,id:initId});
-      setTimeout(() => {
-        console.log("timeoutconsole")
-        console.log(socketData);
-        socket.emitWithAck("init_res", storeData);
-      }, 3000);
+      setId(initId);
+      setSocketData((prevData:socketDataType)=>({...prevData,id:initId}));
+      socket.emitWithAck("init_res");
     });
 
 
@@ -104,32 +94,42 @@ const MyComponent = ({lat, lng}: prop) => {
   //   setInterval(sendPosition, 5000);
   // }
 
-
-
-
-
-
-  return (
-    <div>
-      <div id="name">
-        {socketData.name}
+  if(process.env.NEXT_PUBLIC_GOOGLE_MAP_API_KEY!==undefined){
+    const API_KEY:string=process.env.NEXT_PUBLIC_GOOGLE_MAP_API_KEY
+    console.log("local");
+    return (
+      <div>
+        <div id="name">
+          {socketData.name}
+        </div>
+        <input type="text" placeholder="名前" value={name} onChange={(e) => setName(e.target.value)} />
+        <button onClick={() => handleName()}>送信</button>
+        <LoadScript googleMapsApiKey={API_KEY}>
+          <GoogleMap
+            mapContainerStyle={containerStyle}
+            center={socketData.position}
+            zoom={20}
+          >
+          </GoogleMap>
+        </LoadScript>
+        <button onClick={getPosition}>位置情報取得</button>
+        <br />
+        <button onClick={()=>console.log(socketData)}>位置情報送信を開始</button>
+  
       </div>
-      <input type="text" placeholder="名前" value={name} onChange={(e) => setName(e.target.value)} />
-      <button onClick={() => handleName()}>送信</button>
-      <LoadScript googleMapsApiKey="AIzaSyAheiUVYAXMXnpaIjFQCczhVUUEe39NhLc">
-        <GoogleMap
-          mapContainerStyle={containerStyle}
-          center={socketData.position}
-          zoom={20}
-        >
-        </GoogleMap>
-      </LoadScript>
-      <button onClick={getPosition}>位置情報取得</button>
-      <br />
-      <button onClick={()=>console.log(socketData)}>位置情報送信を開始</button>
+    );
+  }else{
+    return (
+      <div>
+        <h1>ERROR:Can not get API KEY</h1>
+      </div>
+    );
+  }
+    
 
-    </div>
-  );
+
+  
+  
 };
 
 
