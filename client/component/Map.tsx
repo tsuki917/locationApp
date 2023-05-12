@@ -65,7 +65,7 @@ const MyComponent = () => {
 
   const handleName = () => {
     if (name !== '') {
-      setSocketData({ ...socketData, name: name })
+      setSocketData({ ...socketData, name: name });
       setName("");
       console.log("move");
     }
