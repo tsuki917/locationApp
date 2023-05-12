@@ -49,7 +49,7 @@ const MyComponent = () => {
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
-    socket.on("init", (initId: string) => {
+    socket.once("init", (initId: string) => {
       console.log("init");
       setId(initId);
       setSocketData((prevData:socketDataType)=>({...prevData,id:initId}));
@@ -59,7 +59,7 @@ const MyComponent = () => {
 
   useEffect(() => {
     console.log("change");
-    console.log(socketData)
+    console.log(socketData);
     socket.emitWithAck("changeData", socketData);
   }, [socketData]);
 
@@ -74,7 +74,7 @@ const MyComponent = () => {
   const getPosition = () => {
 
     navigator.geolocation.getCurrentPosition((position) => {
-    setSocketData({id:socketData.id,name:socketData.name,position:{lat:position.coords.latitude,lng:position.coords.longitude}}),
+    setSocketData(()=>({...socketData,position:{lat:position.coords.latitude,lng:position.coords.longitude}})),
         () => console.log("error");
     });
     console.log("getPosition");
@@ -82,9 +82,16 @@ const MyComponent = () => {
   }
 
   const sendPosition = () => {
-    socket.emitWithAck("send_position", socketData);
-    console.log(socketData);
-    console.log("送信");
+    let constantKey = setInterval(() => {
+      navigator.geolocation.getCurrentPosition((position) => {
+        setSocketData(()=>({...socketData,position:{lat:position.coords.latitude,lng:position.coords.longitude}})),
+            () => console.log("error");
+        });
+        console.log("sendPosition");
+        console.log(socketData);
+    }, 10000);
+    
+    
   }
 
 
@@ -114,7 +121,7 @@ const MyComponent = () => {
         </LoadScript>
         <button onClick={getPosition}>位置情報取得</button>
         <br />
-        <button onClick={()=>console.log(socketData)}>位置情報送信を開始</button>
+        <button onClick={sendPosition}>位置情報送信を開始</button>
   
       </div>
     );

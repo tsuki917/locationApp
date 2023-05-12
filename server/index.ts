@@ -26,29 +26,19 @@ io.on("connection", (socket) => {
     socketData_array.push({name:'noName',position:{lat:0,lng:0},id:socket_id});
     socket.emit("init",socket_id);
     socket.on("init_res",(init_res_data:socketDataType)=>{
-        console.log("successfully send id")
+        console.log("successfully send id");
     });
 
-    socket.on("send_position", (data) => {
-        console.log(data);
-        // let targetIndex = -1;
-        // console.log("send_position");
-        // socketData_array.forEach((element,index) => {
-        //         if(element.id===data.id){
-        //             targetIndex=index;
-        //         }
-        // });
-        // if(targetIndex!==-1){
-        //     socketData_array[targetIndex]=data;
-        //     console.log(socketData_array[targetIndex]);
-        // }
-
-    });
+    
 
     socket.on("changeData",(newData:socketDataType)=>{
-        if(newData)
-        console.log("newData");
-        console.log(newData);
+        if(newData.id!==''){
+            searchId(newData);
+            console.log(socketData_array);
+        }else{
+            socket.emit("init",socket_id);
+            console.log("false");
+        }
     });
 
 })
@@ -56,3 +46,16 @@ io.on("connection", (socket) => {
 server.listen(PORT, () => {
     console.log(`server running on ${PORT}`);
 })
+
+
+function searchId(insertData:socketDataType){
+    for(let i = 0;i<socketData_array.length;i++){
+        if(socketData_array[i].id===insertData.id){
+            socketData_array[i].name=insertData.name;
+            socketData_array[i].position.lat=insertData.position.lat;
+            socketData_array[i].position.lng=insertData.position.lng;
+            console.log(socketData_array[i]);
+
+        }
+    }
+}
