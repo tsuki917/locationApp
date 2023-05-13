@@ -25,8 +25,9 @@ const socketData_array: socketDataType[] = [];
 io.on("connection", (socket) => {
     console.log("クライアントと接続");
     const socket_id = socket.id;
-    socket.emit('newClient',socketData_array);
+    
     socketData_array.push({name:'noName',position:{lat:0,lng:0},id:socket_id,selfIntroduce:'よろしくお願いします！'});
+    
     socket.emit("init",socket_id);
     socket.on("init_res",(init_res_data:socketDataType)=>{
         console.log("successfully send id");
