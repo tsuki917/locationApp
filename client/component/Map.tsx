@@ -2,7 +2,6 @@ import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
 import { SocketType } from "dgram";
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
-
 const containerStyle = {
   width: "800px",
   height: "400px",
@@ -47,7 +46,7 @@ const MyComponent = () => {
       () => console.log("error");
     });
     socket.on("send_AllClientData",(allClientDatas:socketDataType[])=>{
-      setClientDatas(allClientDatas);
+      setClientDatas(()=>(allClientDatas));
       console.log(allClientDatas);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -117,7 +116,7 @@ const MyComponent = () => {
     console.log("local");
     return (
       <div>
-        <div id="name" className="underline">
+        <div id="name">
           {socketData.name}
         </div>
         <div id="introcude">
@@ -129,8 +128,7 @@ const MyComponent = () => {
           setSelfIntro(e.target.value)
         } />
         <button onClick={() => handleSelfDatas()}>送信</button>
-        <div className="place-content-center">
-        <LoadScript googleMapsApiKey={API_KEY} >
+        <LoadScript googleMapsApiKey={API_KEY}>
           <GoogleMap
             mapContainerStyle={containerStyle}
             center={socketData.position}
@@ -139,8 +137,6 @@ const MyComponent = () => {
           <Marker position={socketData.position}></Marker>
           </GoogleMap>
         </LoadScript>
-        </div>
-        
         <button onClick={getPosition}>位置情報取得</button>
         <br />
         <button onClick={sendPosition}>位置情報送信を開始</button>
