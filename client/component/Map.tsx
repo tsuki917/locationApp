@@ -23,58 +23,68 @@ type socketDataType = {
   position: {
     lat: number,
     lng: number
-  }
+  },
+  selfIntroduce:string
 }
 
 const MyComponent = () => {
   const [name, setName] = useState("");
-  const [socketData, setSocketData] = useState<socketDataType>({ id: '',name: "noName", position: {lat:0,lng:0}});
-  const [id,setId] = useState<string>('');
+  const [selfIntro, setSelfIntro] = useState("");
+  const [socketData, setSocketData] = useState<socketDataType>({ id: '',name: "noName", position: {lat:0,lng:0},selfIntroduce:"よろしくお願いします！"});
+  const [ClientDatas,setClientDatas] = useState<socketDataType[]>([]);
   console.log("hoge");
   
   //位置情報の初期化
   useEffect(() => {
-    console.log("firstEffect")
+    console.log("firstEffect");
     navigator.geolocation.getCurrentPosition((getPositionData) => {
       setSocketData((prevData:socketDataType)=>({
         ...prevData,position:{lat:getPositionData.coords.latitude,lng:getPositionData.coords.longitude}
       })
-
-      
-       
-      
       )
       ,
       () => console.log("error");
+    });
+    socket.on("send_AllClientData",(allClientDatas:socketDataType[])=>{
+      setClientDatas(()=>(allClientDatas));
+      console.log(allClientDatas);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
     socket.once("init", (initId: string) => {
       console.log("init");
-      setId(initId);
       setSocketData((prevData:socketDataType)=>({...prevData,id:initId}));
       socket.emitWithAck("init_res");
     });
 
+    
+
+
 
   useEffect(() => {
-    console.log("change");
-    console.log(socketData);
     socket.emitWithAck("changeData", socketData);
   }, [socketData]);
 
-  const handleName = () => {
+  const handleSelfDatas = () => {
     if (name !== '') {
-      setSocketData({ ...socketData, name: name });
+      setSocketData((prev:socketDataType)=>({ ...prev, name: name }));
+
       setName("");
       console.log("move");
     }
+    if(selfIntro!==''){
+      setSocketData((prev:socketDataType)=>({ ...prev, selfIntroduce:selfIntro}));
+      
+      setSelfIntro("");
+      console.log("self move");
+    }
+    
   }
 
   const getPosition = () => {
 
     navigator.geolocation.getCurrentPosition((position) => {
-    setSocketData(()=>({...socketData,position:{lat:position.coords.latitude,lng:position.coords.longitude}})),
+    setSocketData((prev:socketDataType)=>({...prev,position:{lat:position.coords.latitude,lng:position.coords.longitude}})),
         () => console.log("error");
     });
     console.log("getPosition");
@@ -84,7 +94,7 @@ const MyComponent = () => {
   const sendPosition = () => {
     let constantKey = setInterval(() => {
       navigator.geolocation.getCurrentPosition((position) => {
-        setSocketData(()=>({...socketData,position:{lat:position.coords.latitude,lng:position.coords.longitude}})),
+        setSocketData((prev:socketDataType)=>({...prev,position:{lat:position.coords.latitude,lng:position.coords.longitude}})),
             () => console.log("error");
         });
         console.log("sendPosition");
@@ -109,19 +119,40 @@ const MyComponent = () => {
         <div id="name">
           {socketData.name}
         </div>
+        <div id="introcude">
+          {socketData.selfIntroduce}
+        </div>
         <input type="text" placeholder="名前" value={name} onChange={(e) => setName(e.target.value)} />
-        <button onClick={() => handleName()}>送信</button>
+        <br/>
+        <input type="text" placeholder="自己紹介" value={selfIntro} onChange={(e) => 
+          setSelfIntro(e.target.value)
+        } />
+        <button onClick={() => handleSelfDatas()}>送信</button>
         <LoadScript googleMapsApiKey={API_KEY}>
           <GoogleMap
             mapContainerStyle={containerStyle}
             center={socketData.position}
             zoom={20}
           >
+          <Marker position={socketData.position}></Marker>
           </GoogleMap>
         </LoadScript>
         <button onClick={getPosition}>位置情報取得</button>
         <br />
         <button onClick={sendPosition}>位置情報送信を開始</button>
+
+        <div className="ProfList">
+          {ClientDatas.filter((data)=>data.position.lat!==0&&data.position.lng!==0).
+          map((clientData,key)=>{
+            return (
+            <div className="prof" key={key}>
+              <h1 >{clientData.name}</h1>
+              <h2>{clientData.selfIntroduce}</h2>
+            </div>
+            
+            );
+          })}
+        </div>
   
       </div>
     );

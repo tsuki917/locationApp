@@ -13,17 +13,20 @@ const io = new Server(server, {
 type socketDataType = {
     id: string,
     name: string,
+    selfIntroduce:string,
     position: {
       lat: number,
       lng: number
     }
+    
   }
 const PORT = 5000;
 const socketData_array: socketDataType[] = [];
 io.on("connection", (socket) => {
     console.log("クライアントと接続");
     const socket_id = socket.id;
-    socketData_array.push({name:'noName',position:{lat:0,lng:0},id:socket_id});
+    socket.emit('newClient',socketData_array);
+    socketData_array.push({name:'noName',position:{lat:0,lng:0},id:socket_id,selfIntroduce:'よろしくお願いします！'});
     socket.emit("init",socket_id);
     socket.on("init_res",(init_res_data:socketDataType)=>{
         console.log("successfully send id");
@@ -31,21 +34,24 @@ io.on("connection", (socket) => {
 
     
 
+    
+
     socket.on("changeData",(newData:socketDataType)=>{
         if(newData.id!==''){
             searchId(newData);
-            console.log(socketData_array);
+            console.log("change");
+            socket.emit("send_AllClientData",socketData_array);
         }else{
             socket.emit("init",socket_id);
             console.log("false");
         }
     });
 
-})
+});
 
 server.listen(PORT, () => {
     console.log(`server running on ${PORT}`);
-})
+});
 
 
 function searchId(insertData:socketDataType){
@@ -54,6 +60,8 @@ function searchId(insertData:socketDataType){
             socketData_array[i].name=insertData.name;
             socketData_array[i].position.lat=insertData.position.lat;
             socketData_array[i].position.lng=insertData.position.lng;
+            socketData_array[i].selfIntroduce=insertData.selfIntroduce;
+
             console.log(socketData_array[i]);
 
         }
