@@ -32,6 +32,13 @@ io.on("connection", (socket) => {
         console.log("successfully send id");
     });
 
+
+    // socket.on("reqIntervalData",(id:string)=>{
+    //     console.log(id);
+    //     socket.to(id).emit("resIntervalData",socketData_array);
+    //     console.log("res")
+    // })
+
     
 
     

@@ -2,6 +2,7 @@ import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
 import { SocketType } from "dgram";
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
+import { setInterval } from "timers";
 const containerStyle = {
   width: "800px",
   height: "400px",
@@ -46,11 +47,20 @@ const MyComponent = () => {
       () => console.log("error");
     });
     socket.on("send_AllClientData",(allClientDatas:socketDataType[])=>{
-      setClientDatas(()=>(allClientDatas));
-      console.log(allClientDatas);
+      setClientDatas(allClientDatas);
+      console.log("allClientDatas");
+      
     });
+    
+    
+    // socket.on("resIntervalData",(res)=>{
+    //   setClientDatas(()=>res);
+    //   console.log("resinter");
+    // });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
+    
+
     socket.once("init", (initId: string) => {
       console.log("init");
       setSocketData((prevData:socketDataType)=>({...prevData,id:initId}));
@@ -98,10 +108,15 @@ const MyComponent = () => {
             () => console.log("error");
         });
         console.log("sendPosition");
-        console.log(socketData);
     }, 10000);
     
     
+  }
+
+  const reget = () =>{
+    console.log("newarraydata");
+    console.log(ClientDatas);
+    setClientDatas((prev)=>prev);
   }
 
 
@@ -140,12 +155,14 @@ const MyComponent = () => {
         <button onClick={getPosition}>位置情報取得</button>
         <br />
         <button onClick={sendPosition}>位置情報送信を開始</button>
+        <br />
+        <button onClick={reget}>更新</button>
 
-        <div className="ProfList">
+        <div className="flex">
           {ClientDatas.filter((data)=>data.position.lat!==0&&data.position.lng!==0).
           map((clientData,key)=>{
             return (
-            <div className="prof" key={key}>
+            <div className="rounded bg-slate-400" key={key}>
               <h1 >{clientData.name}</h1>
               <h2>{clientData.selfIntroduce}</h2>
             </div>
