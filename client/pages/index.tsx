@@ -8,11 +8,12 @@ const inter = Inter({ subsets: ['latin'] })
 
 export default function Home() {
   return (
-     <div>
-      <div id='map'></div>
-     <Map lat={0} lng={0}/>
-     </div>
+    <div>
+      <div id='map' className='w-[375px] '>
+        <Map />
+      </div>
+    </div>
 
-     
+
   );
 }
