@@ -53,6 +53,16 @@ io.on("connection", (socket) => {
             console.log("false");
         }
     });
+    socket.on("disconnect",()=>{
+        console.log(socketData_array);
+        for(let i=0;i<socketData_array.length;i++){
+            if(socketData_array[i].id===socket_id){
+                socketData_array.splice(i,1);
+                console.log(socketData_array);
+            }
+        }
+        console.log(socket_id);
+    });
 
 });
 

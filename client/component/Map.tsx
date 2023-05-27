@@ -54,6 +54,7 @@ const MyComponent = () => {
       setClientDatas(allClientDatas);
       console.log("allClientDatas");
     });
+    
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -126,10 +127,10 @@ const MyComponent = () => {
     console.log("local");
     return (
       <div className="border w-[375px]  ">
-        <div className="border-2 border-black shadow-sm  rounded-xl m-2 p-2 w-[360px] text-left ">
-          <div className=" m-1 ml-2 text-left text-xl underline">
-            My Profile
-          </div>
+        <div className=" m-1 ml-4 text-left text-3xl font-bold underline">
+          My Profile
+        </div>
+        <div className="border-2 border-black shadow-sm  rounded-xl m-3 ml-[37.5px] mr-[37.5px] p-2 w-[300px] text-left  ">
           <div id="name" className="   ml-2 inline-block">
             <h2 className="font-bold">名前</h2>
             <p className="font-bold ml-5">{socketData.name}</p>
@@ -140,48 +141,54 @@ const MyComponent = () => {
             <p className="ml-3">{socketData.selfIntroduce}</p>
           </div>
           <div id="edit-intro">
-            
-            {
-              !isEdit&&(
-                <button
-              className="inline-block  bg-gradient-to-br from-blue-300 to-blue-800 hover:bg-gradient-to-tl text-white rounded px-4 py-2 my-2 m-auto"
-              onClick={() => setIsEdit(true)}
-            >
-              編集
-            </button>
-              )
-            }
-            {isEdit && (
-            <div id="editting">
-              <input
-                type="text"
-                placeholder="名前"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="ml-3 mb-1 border"
-              />
-              <br />
-              <textarea
-                placeholder="自己紹介"
-                value={selfIntro}
-                onChange={(e) => setSelfIntro(e.target.value)}
-                className=" w-4/5 ml-3 mb-1 border"
-              />
-              <br />
+            {!isEdit && (
               <button
-                onClick={() => {handleSelfDatas();setIsEdit(()=>false)}}
-                className="bg-gradient-to-br from-blue-300 to-blue-800 hover:bg-gradient-to-tl text-white rounded px-4 py-2 my-2  ml-2"
+                className="inline-block  bg-gradient-to-br from-blue-300 to-blue-800 hover:bg-gradient-to-tl text-white rounded px-4 py-2 my-2 m-auto"
+                onClick={() => setIsEdit(true)}
               >
-                送信
+                編集
               </button>
-            </div>
-          )}
+            )}
+            {isEdit && (
+              <div id="editting" className=" mt-7 border">
+                <p className="m-2 font-bold">変更の入力</p>
+                <input
+                  type="text"
+                  placeholder="名前"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="ml-3 mb-1 border"
+                />
+                <br />
+                <textarea
+                  placeholder="自己紹介"
+                  value={selfIntro}
+                  onChange={(e) => setSelfIntro(e.target.value)}
+                  className=" w-4/5 ml-3 mb-1 border"
+                />
+                <br />
+                <button
+                  onClick={() => setIsEdit(() => false)}
+                  className="bg-gradient-to-br from-blue-300 to-blue-800 hover:bg-gradient-to-tl text-white rounded px-4 py-2 my-2  ml-2"
+                >
+                  閉じる
+                </button>
+                <button
+                  onClick={() => {
+                    handleSelfDatas();
+                    setIsEdit(() => false);
+                  }}
+                  className="bg-gradient-to-br from-blue-300 to-blue-800 hover:bg-gradient-to-tl text-white rounded px-4 py-2 my-2  ml-2"
+                >
+                  送信
+                </button>
+              </div>
+            )}
           </div>
-          
         </div>
 
         <div className="ml-[37.5px] mr-[37.5px]">
-          <h2 className="font-bold text-3xl m-2">Map</h2>
+          <h2 className="font-bold text-3xl m-2 underline">Map</h2>
           <LoadScript googleMapsApiKey={API_KEY}>
             <GoogleMap
               mapContainerStyle={containerStyle}
@@ -208,14 +215,22 @@ const MyComponent = () => {
           </button>
         </div>
 
-        <div className="">
+        <div className=" w-[300px] ml-[37.5px] mr-[37.5px] my-4">
+          <div className="text-left">
+            <h2 className="font-bold text-3xl underline">ProfileList</h2>
+          </div>
           {ClientDatas.filter(
             (data) => data.position.lat !== 0 && data.position.lng !== 0
           ).map((clientData, key) => {
             return (
-              <div className="border-2 inline-block" key={key}>
-                <h1 className="row-auto col-auto">{clientData.name}</h1>
+              <div className="border-2  m-3 p-3 rounded-xl" key={key}>
+                <h1 className="row-auto col-auto text-xl">{clientData.name}</h1>
                 <h2>{clientData.selfIntroduce}</h2>
+                <div className="text-center">
+                  <button className=" inline-block bg-gradient-to-br from-blue-300 to-blue-800 hover:bg-gradient-to-tl text-white rounded px-4 py-2 mb-2 mt-4 ml-2">
+                    位置情報取得
+                  </button>
+                </div>
               </div>
             );
           })}
@@ -232,19 +247,3 @@ const MyComponent = () => {
 };
 
 export default MyComponent;
-
-// export const getServerSideProps: GetServerSideProps = async () => {
-//   let myPosition: prop = {
-//     lat: 0,
-//     lng: 0
-//   };
-//   navigator.geolocation.getCurrentPosition(
-//     function (position) {
-//       myPosition.lat = position.coords.latitude;
-//       myPosition.lng = position.coords.longitude;
-//     }, () => console.log("error"));
-
-//   return {
-//     props: myPosition,
-//   };
-// };
