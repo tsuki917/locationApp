@@ -9,10 +9,7 @@ const containerStyle = {
 
 const socket = io("http://localhost:5000");
 
-type prop = {
-  lat: number;
-  lng: number;
-};
+
 
 type socketDataType = {
   id: string;
