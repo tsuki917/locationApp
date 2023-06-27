@@ -1,5 +1,6 @@
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
-import { useEffect, useState } from "react";
+import { GOOGLE_FONT_PROVIDER } from "next/dist/shared/lib/constants";
+import {useCallback, useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import { setInterval } from "timers";
 const containerStyle = {
@@ -32,9 +33,17 @@ const MyComponent = () => {
   });
   const [ClientDatas, setClientDatas] = useState<socketDataType[]>([]);
   const [isEdit, setIsEdit] = useState<boolean>(false);
-  console.log("hoge");
+  const [sending,setSending] = useState<boolean>(false);
+  const intervalRef = useRef<number>();
 
-  //位置情報の初期化
+  //get socket id from server 
+  socket.once("init", (initId: string) => {
+    console.log("init");
+    setSocketData((prevData: socketDataType) => ({ ...prevData, id: initId }));
+    socket.emitWithAck("init_res");
+  });
+
+  //initialize postion and set event to get AllclientData from server
   useEffect(() => {
     console.log("firstEffect");
     navigator.geolocation.getCurrentPosition((getPositionData) => {
@@ -55,12 +64,8 @@ const MyComponent = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  socket.once("init", (initId: string) => {
-    console.log("init");
-    setSocketData((prevData: socketDataType) => ({ ...prevData, id: initId }));
-    socket.emitWithAck("init_res");
-  });
-
+  
+  //when user's data has changed ,this sends user's data to server  
   useEffect(() => {
     socket.emitWithAck("changeData", socketData);
   }, [socketData]);
@@ -98,8 +103,10 @@ const MyComponent = () => {
     console.log(socketData);
   };
 
-  const sendPosition = () => {
-    let constantKey = setInterval(() => {
+  const sendPosition = ()=> {
+    console.log("start");
+    setSending(true);
+    intervalRef.current = window.setInterval(() => {
       navigator.geolocation.getCurrentPosition((position) => {
         setSocketData((prev: socketDataType) => ({
           ...prev,
@@ -108,16 +115,21 @@ const MyComponent = () => {
             lng: position.coords.longitude,
           },
         })),
-          () => console.log("error");
+        () => console.log("error");
       });
       console.log("sendPosition");
-    }, 10000);
+    }, 8000);
+    console.log(intervalRef.current);
   };
 
-  // const startSendPosition = () => {
-  //   console.log("start");
-  //   setInterval(sendPosition, 5000);
-  // }
+  const stopSendPosition = ()=>{
+    console.log("stop");
+    console.log(intervalRef.current);
+    if(intervalRef.current)window.clearInterval(intervalRef.current);
+    setSending(false);
+  };
+
+
 
   if (process.env.NEXT_PUBLIC_GOOGLE_MAP_API_KEY !== undefined) {
     const API_KEY: string = process.env.NEXT_PUBLIC_GOOGLE_MAP_API_KEY;
@@ -166,7 +178,7 @@ const MyComponent = () => {
                 <br />
                 <button
                   onClick={() => setIsEdit(() => false)}
-                  className="bg-gradient-to-br from-blue-300 to-blue-800 hover:bg-gradient-to-tl text-white rounded px-4 py-2 my-2  ml-2"
+                  className="bg-gradient-to-br from-red-400 to-red-600 hover:bg-gradient-to-tl text-white rounded px-3 py-2 my-2  ml-2"
                 >
                   閉じる
                 </button>
@@ -197,19 +209,27 @@ const MyComponent = () => {
           </LoadScript>
         </div>
 
-        <div className="text-center">
-          <button
-            onClick={getPosition}
-            className="inline-block  bg-gradient-to-br from-blue-300 to-blue-800 hover:bg-gradient-to-tl text-white rounded px-4 py-2 my-2 m-auto"
-          >
-            位置情報取得
-          </button>
-          <button
+        <div className="text-center mr-8">
+        <div className="text-right">
+            <button  className="inline-block bg-gradient-to-br from-green-300 to-teal-700 hover:bg-gradient-to-tl text-white rounded px-4 py-2 mb-2  mt-4 ml-2" onClick={getPosition}>更新</button>
+          </div>
+          {!sending&&(
+            <button
             onClick={sendPosition}
             className=" inline-block bg-gradient-to-br from-blue-300 to-blue-800 hover:bg-gradient-to-tl text-white rounded px-4 py-2 my-2  ml-2"
           >
             位置情報送信を開始
           </button>
+          )}
+          {sending&&(
+            <button
+            onClick={stopSendPosition}
+            className=" inline-block bg-gradient-to-br from-red-400 to-red-600 hover:bg-gradient-to-tl text-white rounded px-4 py-2 my-2  ml-2"
+          >
+            位置情報送信を停止
+          </button>
+          )}
+          
         </div>
 
         <div className=" w-[300px] ml-[37.5px] mr-[37.5px] my-4">
@@ -231,6 +251,9 @@ const MyComponent = () => {
               </div>
             );
           })}
+          <div className="text-right m-2">
+            <button  className="inline-block bg-gradient-to-br from-green-300 to-teal-700 hover:bg-gradient-to-tl text-white rounded px-4 py-2 mb-2 mt-4 ml-2" onClick={getPosition}>更新</button>
+          </div>
         </div>
       </div>
     );
