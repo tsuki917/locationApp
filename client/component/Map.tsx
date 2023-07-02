@@ -1,8 +1,10 @@
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
 import { GOOGLE_FONT_PROVIDER } from "next/dist/shared/lib/constants";
+import { useRouter } from "next/router";
 import {useCallback, useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
-import { setInterval } from "timers";
+
+
 const containerStyle = {
   width: "300px",
   height: "200px",
@@ -23,6 +25,11 @@ type socketDataType = {
 };
 
 const MyComponent = () => {
+
+  const testRouter = useRouter();
+  const test = testRouter.asPath;
+  const uuidPath = test.split("uuid=")[1];
+  console.log(uuidPath);
   const [name, setName] = useState("");
   const [selfIntro, setSelfIntro] = useState("");
   const [socketData, setSocketData] = useState<socketDataType>({
