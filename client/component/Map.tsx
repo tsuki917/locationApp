@@ -3,13 +3,14 @@ import { GOOGLE_FONT_PROVIDER } from "next/dist/shared/lib/constants";
 import { useRouter } from "next/router";
 import {useCallback, useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
+import { uuid } from "uuidv4";
 
 
 const containerStyle = {
   width: "300px",
   height: "200px",
 };
-
+console.log("socketOn")
 const socket = io("http://localhost:5000");
 
 
@@ -17,6 +18,7 @@ const socket = io("http://localhost:5000");
 type socketDataType = {
   id: string;
   name: string;
+  roomId:string;
   position: {
     lat: number;
     lng: number;
@@ -30,11 +32,20 @@ const MyComponent = () => {
   const test = testRouter.asPath;
   const uuidPath = test.split("uuid=")[1];
   console.log(uuidPath);
+
+  const [roomId,setRoomId] = useState<string>(uuidPath); 
+  
+
+
+
+
+
   const [name, setName] = useState("");
   const [selfIntro, setSelfIntro] = useState("");
   const [socketData, setSocketData] = useState<socketDataType>({
     id: "",
     name: "noName",
+    roomId:uuidPath,
     position: { lat: 0, lng: 0 },
     selfIntroduce: "よろしくお願いします！",
   });
@@ -46,8 +57,10 @@ const MyComponent = () => {
   //get socket id from server 
   socket.once("init", (initId: string) => {
     console.log("init");
+    
     setSocketData((prevData: socketDataType) => ({ ...prevData, id: initId }));
-    socket.emitWithAck("init_res");
+    setSocketData((prevData: socketDataType) => ({ ...prevData, roomId: uuidPath}));
+    socket.emitWithAck("init_res",socketData);
   });
 
   //initialize postion and set event to get AllclientData from server
@@ -63,6 +76,7 @@ const MyComponent = () => {
       })),
         () => console.log("error");
     });
+
     socket.on("send_AllClientData", (allClientDatas: socketDataType[]) => {
       setClientDatas(allClientDatas);
       console.log("allClientDatas");
@@ -70,12 +84,19 @@ const MyComponent = () => {
     
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  
 
   
   //when user's data has changed ,this sends user's data to server  
   useEffect(() => {
+    if(uuid!==undefined && socketData.roomId!==roomId)setRoomId(()=>uuidPath);
     socket.emitWithAck("changeData", socketData);
   }, [socketData]);
+  useEffect(() => {
+    setSocketData((prev:socketDataType)=>({...prev,roomId:uuidPath}));
+    socket.emitWithAck("joinRoom",roomId);
+  }, [roomId]);
+  
 
   const handleSelfDatas = () => {
     if (name !== "") {
@@ -94,6 +115,7 @@ const MyComponent = () => {
       console.log("self move");
     }
   };
+  
 
   const getPosition = () => {
     navigator.geolocation.getCurrentPosition((position) => {
@@ -107,6 +129,10 @@ const MyComponent = () => {
         () => console.log("error");
     });
     console.log("getPosition");
+    setSocketData((prev:socketDataType)=>({
+      ...prev,
+      roomId:uuidPath
+    }))
     console.log(socketData);
   };
 
@@ -150,6 +176,7 @@ const MyComponent = () => {
           <div id="name" className="   ml-2 inline-block">
             <h2 className="font-bold">名前</h2>
             <p className="font-bold ml-5">{socketData.name}</p>
+            <p className="font-bold ml-5">{socketData.roomId}</p>
           </div>
           <br />
           <div id="introcude" className=" inline-block">
@@ -246,17 +273,20 @@ const MyComponent = () => {
           {ClientDatas.filter(
             (data) => data.position.lat !== 0 && data.position.lng !== 0
           ).map((clientData, key) => {
-            return (
-              <div className="border-2  m-3 p-3 rounded-xl" key={key}>
-                <h1 className="row-auto col-auto text-xl">{clientData.name}</h1>
-                <h2>{clientData.selfIntroduce}</h2>
-                <div className="text-center">
-                  <button className=" inline-block bg-gradient-to-br from-blue-300 to-blue-800 hover:bg-gradient-to-tl text-white rounded px-4 py-2 mb-2 mt-4 ml-2">
-                    位置情報取得
-                  </button>
+            
+            if(clientData.id !==socketData.id){
+              return (
+                <div className="border-2  m-3 p-3 rounded-xl" key={key}>
+                  <h1 className="row-auto col-auto text-xl">{clientData.name}</h1>
+                  <h2>{clientData.selfIntroduce}</h2>
+                  <div className="text-center">
+                    <button className=" inline-block bg-gradient-to-br from-blue-300 to-blue-800 hover:bg-gradient-to-tl text-white rounded px-4 py-2 mb-2 mt-4 ml-2">
+                      位置情報取得
+                    </button>
+                  </div>
                 </div>
-              </div>
-            );
+              );
+            }
           })}
           <div className="text-right m-2">
             <button  className="inline-block bg-gradient-to-br from-green-300 to-teal-700 hover:bg-gradient-to-tl text-white rounded px-4 py-2 mb-2 mt-4 ml-2" onClick={getPosition}>更新</button>

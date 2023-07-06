@@ -18,6 +18,7 @@ const io = new Server(server, {
 });
 type socketDataType = {
     id: string,
+    roomId:string,
     name: string,
     selfIntroduce:string,
     position: {
@@ -32,10 +33,19 @@ io.on("connection", (socket) => {
     console.log("クライアントと接続");
     const socket_id = socket.id;
     socket.emit('newClient',socketData_array);
-    socketData_array.push({name:'noName',position:{lat:0,lng:0},id:socket_id,selfIntroduce:'よろしくお願いします！'});
+    socketData_array.push({name:'noName',position:{lat:0,lng:0},id:socket_id,roomId:"",selfIntroduce:'よろしくお願いします！'});
     socket.emit("init",socket_id);
-    socket.on("init_res",(init_res_data:socketDataType)=>{
-        console.log("successfully send id");
+    socket.on("init_res",(socketData:socketDataType)=>{
+        if(socketData.roomId!==undefined){
+            socket.join(socketData.roomId);
+            console.log(socketData.roomId+"に入室しました");
+
+        }else{
+            console.log("roomIdがundefined");
+        }
+    });
+    socket.on("joinRoom",(roomId)=>{
+        socket.join(roomId);
     });
 
 
@@ -53,7 +63,7 @@ io.on("connection", (socket) => {
         if(newData.id!==''){
             searchId(newData);
             console.log("change");
-            socket.emit("send_AllClientData",socketData_array);
+            socket.to(newData.roomId).emit("send_AllClientData",socketData_array);
         }else{
             socket.emit("init",socket_id);
             console.log("false");
@@ -84,7 +94,7 @@ function searchId(insertData:socketDataType){
             socketData_array[i].position.lat=insertData.position.lat;
             socketData_array[i].position.lng=insertData.position.lng;
             socketData_array[i].selfIntroduce=insertData.selfIntroduce;
-
+            socketData_array[i].roomId = insertData.roomId;
             console.log(socketData_array[i]);
 
         }
