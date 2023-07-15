@@ -1,9 +1,56 @@
 const express = require("express");
 const app = express();
 
+import { collection, addDoc ,setDoc,doc} from "firebase/firestore"; 
+import { getFirestore } from "firebase/firestore";
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+    apiKey: process.env.APIKEY,
+    authDomain: "locationapp-962e8.firebaseapp.com",
+    projectId: "locationapp-962e8",
+    storageBucket: "locationapp-962e8.appspot.com",
+    messagingSenderId: "828032903544",
+    appId: "1:828032903544:web:7b9dd99a018840a474c08d",
+    measurementId: "G-4Y438XPSP0"
+};
+// Initialize Firebase
+const appFire = initializeApp(firebaseConfig);
+const db = getFirestore(appFire);
+async function docTest(){
+    console.log("docTest")
+    try {
+        console.log("test")
+        const docRef = await addDoc(collection(db, "test"), {
+            first: "Ada",
+            last: "Lovelace",
+            born: 1815
+          });
+    } catch (e) {
+      console.error("Error adding document: ", e);
+    }
+    console.log("test");
+    
+}
+docTest();
+
+
+
+
+
 import http from "http";
+
+// import http from "http";
 const server = http.createServer(app);
 import { Server } from "socket.io";
+
+
 
 const io = new Server(server, {
     cors: {
@@ -100,3 +147,6 @@ function searchId(insertData:socketDataType){
         }
     }
 }
+
+
+
