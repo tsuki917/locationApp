@@ -1,23 +1,19 @@
-import Image from 'next/image'
 import { Inter } from 'next/font/google'
-import io from "socket.io-client";
-import { SocketAddress } from 'net';
 import Map from "../component/Map"
+import Menu from '@/component/Menu';
 
 
-const socket = io("http://localhost:5000");
 const inter = Inter({ subsets: ['latin'] })
 
-socket.on('connection',()=>{
-  console.log("connection");
-})
+
 export default function Home() {
   return (
-     <div>
-      <div id='map'></div>
-     <Map/>
-     </div>
+    <div className='text-center'>
+      
+      <Menu/>
+      
+    </div>
 
-     
+
   );
 }
