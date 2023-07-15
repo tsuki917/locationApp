@@ -86,10 +86,13 @@ const MyComponent = () => {
   }, []);
   
 
+
   
   //when user's data has changed ,this sends user's data to server  
   useEffect(() => {
+
     if(uuid!==undefined && socketData.roomId!==roomId)setRoomId(()=>uuidPath);
+
     socket.emitWithAck("changeData", socketData);
   }, [socketData]);
   useEffect(() => {
@@ -121,10 +124,12 @@ const MyComponent = () => {
     navigator.geolocation.getCurrentPosition((position) => {
       setSocketData((prev: socketDataType) => ({
         ...prev,
+
         position: {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
         },
+
       })),
         () => console.log("error");
     });
@@ -298,9 +303,11 @@ const MyComponent = () => {
     return (
       <div>
         <h1>ERROR:Can not get API KEY</h1>
+
       </div>
     );
   }
 };
 
 export default MyComponent;
+
