@@ -1,131 +1,338 @@
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
-import { GetServerSideProps } from "next";
-import { type } from "os";
-import { useEffect, useState } from "react";
-import { io } from "socket.io-client";
-const containerStyle = {
-  width: "800px",
-  height: "400px",
-};
 
-const socket = io("http://localhost:5000");
-
-type prop = {
-  lat: number;
-  lng: number;
-};
+import { useRouter } from "next/router";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { io, Socket } from "socket.io-client";
+import { uuid } from "uuidv4";
 
 type socketDataType = {
-  id: String;
-  name: String;
+  id: string;
+  name: string;
+  roomId: string;
+
   position: {
     lat: number;
     lng: number;
   };
+  selfIntroduce: string;
 };
 
-const MyComponent = ({ lat, lng }: prop) => {
-  let zoom;
+const socket: Socket = io("http://localhost:5000");
+const MyComponent = () => {
+  const containerStyle = {
+    width: 800,
+    height: 300,
+  };
+  const testRouter = useRouter();
+  const test = testRouter.asPath;
+  const uuidPath = test.split("uuid=")[1];
+  console.log(uuidPath);
+
+  const [roomId, setRoomId] = useState<string>(uuidPath);
 
   const [name, setName] = useState("");
+  const [selfIntro, setSelfIntro] = useState("");
   const [socketData, setSocketData] = useState<socketDataType>({
     id: "",
     name: "noName",
+    roomId: uuidPath,
     position: { lat: 0, lng: 0 },
+    selfIntroduce: "よろしくお願いします！",
   });
-  console.log("hoge", socketData);
+  const [ClientDatas, setClientDatas] = useState<socketDataType[]>([]);
 
-  //位置情報の初期化
+  const [isEdit, setIsEdit] = useState<boolean>(false);
+  const [sending, setSending] = useState<boolean>(false);
+  const [targetPerson, setTargetPerson] = useState<socketDataType>();
+  const intervalRef = useRef<number>();
+
+  //get socket id from server
+  socket.once("init", (initId: string) => {
+    console.log("init");
+
+    setSocketData((prevData: socketDataType) => ({ ...prevData, id: initId }));
+    setSocketData((prevData: socketDataType) => ({
+      ...prevData,
+      roomId: uuidPath,
+    }));
+    socket.emit("init_res", socketData);
+  });
+
+  //initialize postion and set event to get AllclientData from server
   useEffect(() => {
-    navigator.geolocation.getCurrentPosition((position) => {
-      setSocketData({
-        ...socketData,
+    console.log("firstEffect");
+    navigator.geolocation.getCurrentPosition((getPositionData) => {
+      setSocketData((prevData: socketDataType) => ({
+        ...prevData,
         position: {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
+          lat: getPositionData.coords.latitude,
+          lng: getPositionData.coords.longitude,
         },
-      }),
+      })),
         () => console.log("error");
     });
 
-    socket.on("init", (initId: String) => {
-      const storeData: socketDataType = {
-        id: initId,
-        name: socketData.name,
-        position: {
-          lat: socketData.position.lat,
-          lng: socketData.position.lng,
-        },
-      };
+    socket.on("send_AllClientData", (allClientDatas: socketDataType[]) => {
+      console.log(
+        "Is ClientDatas an array? pre set" + Array.isArray(allClientDatas)
+      );
 
-      console.log("storeData");
-      console.log(storeData);
-      setSocketData(storeData);
-      socket.emitWithAck("init_res", storeData);
+      setClientDatas(allClientDatas);
+      console.log(
+        "Is ClientDatas an array? after set" + Array.isArray(allClientDatas)
+      );
+      // setClientDatas(Array.from(allClientDatas));
+
     });
-  }, [socketData]);
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  //when user's data has changed ,this sends user's data to server
   useEffect(() => {
+    if (uuid !== undefined && socketData.roomId !== roomId)
+      setRoomId(() => uuidPath);
+
     socket.emitWithAck("changeData", socketData);
   }, [socketData]);
+  useEffect(() => {
+    setSocketData((prev: socketDataType) => ({ ...prev, roomId: uuidPath }));
+    socket.emitWithAck("joinRoom", roomId);
+  }, [roomId]);
 
-  const handleName = () => {
+  const handleSelfDatas = () => {
     if (name !== "") {
-      setSocketData({ ...socketData, name: name });
+      setSocketData((prev: socketDataType) => ({ ...prev, name: name }));
+
       setName("");
       console.log("move");
+    }
+    if (selfIntro !== "") {
+      setSocketData((prev: socketDataType) => ({
+        ...prev,
+        selfIntroduce: selfIntro,
+      }));
+
+      setSelfIntro("");
+      console.log("self move");
     }
   };
 
   const getPosition = () => {
+    console.log(ClientDatas);
     navigator.geolocation.getCurrentPosition((position) => {
-      setSocketData({
-        id: socketData.id,
-        name: socketData.name,
+      setSocketData((prev: socketDataType) => ({
+        ...prev,
+
         position: {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
         },
-      }),
+
+      })),
         () => console.log("error");
     });
     console.log("getPosition");
+    setSocketData((prev: socketDataType) => ({
+      ...prev,
+      roomId: uuidPath,
+    }));
+
     console.log(socketData);
   };
 
   const sendPosition = () => {
-    socket.emitWithAck("send_position", socketData);
-    console.log(socketData);
-    console.log("送信");
+
+    console.log("start");
+    setSending(true);
+    intervalRef.current = window.setInterval(() => {
+      navigator.geolocation.getCurrentPosition((position) => {
+        setSocketData((prev: socketDataType) => ({
+          ...prev,
+          position: {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          },
+        })),
+          () => console.log("error");
+      });
+      console.log("sendPosition");
+    }, 8000);
+    console.log(intervalRef.current);
   };
 
-  // const startSendPosition = () => {
-  //   console.log("start");
-  //   setInterval(sendPosition, 5000);
-  // }
+  const stopSendPosition = () => {
+    console.log("stop");
+    console.log(intervalRef.current);
+    if (intervalRef.current) window.clearInterval(intervalRef.current);
+    setSending(false);
+  };
+
+  const reqestAllClientData = () => {
+    console.log("req allClientData");
+    socket.emit("requestAllClientData");
+  };
+
+  const getTargetPerson = (key: number) => {
+    console.log(key);
+    setTargetPerson(ClientDatas[key]);
+  };
 
   if (process.env.NEXT_PUBLIC_GOOGLE_MAP_API_KEY !== undefined) {
     const API_KEY: string = process.env.NEXT_PUBLIC_GOOGLE_MAP_API_KEY;
+    console.log("local");
+    return (
+      <div className="border  m2">
+        <div className=" ml-4 text-left text-3xl font-bold underline">
+          My Profile
+        </div>
+        <div className="border-2 border-black shadow-sm  rounded-xl m-3  text-left  ">
+          <div id="name" className="   ml-2 inline-block">
+            <h2 className="font-bold">名前</h2>
+            <p className="font-bold ml-5">{socketData.name}</p>
+            <p className="font-bold ml-5">{socketData.roomId}</p>
+          </div>
+          <br />
+          <div id="introcude" className=" inline-block">
+            <h2 className="font-bold">自己紹介</h2>
+            <p className="ml-3">{socketData.selfIntroduce}</p>
+          </div>
+          <div id="edit-intro">
+            {isEdit ? (
+              <div id="editting" className=" mt-7 border">
+                <p className="m-2 font-bold">変更の入力</p>
+                <input
+                  type="text"
+                  placeholder="名前"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="ml-3 mb-1 border"
+                />
+                <br />
+                <textarea
+                  placeholder="自己紹介"
+                  value={selfIntro}
+                  onChange={(e) => setSelfIntro(e.target.value)}
+                  className=" w-4/5 ml-3 mb-1 border"
+                />
+                <br />
+                <button
+                  onClick={() => setIsEdit(() => false)}
+                  className="bg-gradient-to-br from-red-400 to-red-600 hover:bg-gradient-to-tl text-white rounded px-3 py-2 my-2  ml-2"
+                >
+                  閉じる
+                </button>
+                <button
+                  onClick={() => {
+                    handleSelfDatas();
+                    setIsEdit(() => false);
+                  }}
+                  className="bg-gradient-to-br from-blue-300 to-blue-800 hover:bg-gradient-to-tl text-white rounded px-4 py-2 my-2  ml-2"
+                >
+                  送信
+                </button>
+              </div>
+            ) : (
+              <button
+                className="inline-block  bg-gradient-to-br from-blue-300 to-blue-800 hover:bg-gradient-to-tl text-white rounded px-4 py-2 my-2 m-auto"
+                onClick={() => setIsEdit(true)}
+              >
+                編集
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="m-3 w-2/3">
+          <h2 className="font-bold text-3xl m-2 underline">Map</h2>
+          <div className="flex justify-around">
+            <LoadScript googleMapsApiKey={API_KEY}>
+              <GoogleMap
+                mapContainerStyle={containerStyle}
+                center={socketData.position}
+                zoom={19}
+              >
+                <Marker position={socketData.position}></Marker>
+                {targetPerson && (
+                  <Marker position={targetPerson.position}></Marker>
+                )}
+              </GoogleMap>
+            </LoadScript>
+          </div>
+        </div>
+        <div className="text-right">
+          <button
+            type="button"
+            className="inline-block bg-gradient-to-br from-green-300 to-teal-700 hover:bg-gradient-to-tl text-white rounded px-4 py-2 mb-2  mt-4 ml-2"
+            onClick={getPosition}
+          >
+            更新
+          </button>
+        </div>
+
+        <div className="text-center mr-8">
+          {!sending && (
+            <button
+              onClick={sendPosition}
+              className=" inline-block bg-gradient-to-br from-blue-300 to-blue-800 hover:bg-gradient-to-tl text-white rounded px-4 py-2 my-2  ml-2"
+            >
+              位置情報送信を開始
+            </button>
+          )}
+          {sending && (
+            <button
+              onClick={stopSendPosition}
+              className=" inline-block bg-gradient-to-br from-red-400 to-red-600 hover:bg-gradient-to-tl text-white rounded px-4 py-2 my-2  ml-2"
+            >
+              位置情報送信を停止
+            </button>
+          )}
+        </div>
+
+        <div className=" w-1/2 m-3 my-4">
+          <div className="text-left">
+            <h2 className="font-bold text-3xl underline">ProfileList</h2>
+          </div>
+          <div className="flex justify-center ">
+            {ClientDatas.map((clientData, key) => {
+              if (clientData.id !== socketData.id) {
+                return (
+                  <div className="border-2 w-2/3 m-3 p-3 rounded-xl" key={key}>
+                    <h1 className="row-auto col-auto text-xl">
+                      {clientData.name}
+                    </h1>
+                    <h2>{clientData.selfIntroduce}</h2>
+                    <div className="text-center">
+                      <button
+                        onClick={() => {
+                          getTargetPerson(key);
+                        }}
+                        className=" inline-block bg-gradient-to-br from-blue-300 to-blue-800 hover:bg-gradient-to-tl text-white rounded px-4 py-2 mb-2 mt-4 ml-2"
+                      >
+                        位置情報取得
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+            })}
+          </div>
+          <div className="text-right m-2">
+            <button
+              className="inline-block bg-gradient-to-br from-green-300 to-teal-700 hover:bg-gradient-to-tl text-white rounded px-4 py-2 mb-2 mt-4 ml-2"
+              onClick={getPosition}
+            >
+              更新
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  } else {
     return (
       <div>
-        <div id="name">{socketData.name}</div>
-        <input
-          type="text"
-          placeholder="名前"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <button onClick={() => handleName()}>送信</button>
-        <LoadScript googleMapsApiKey={API_KEY}>
-          <GoogleMap
-            mapContainerStyle={containerStyle}
-            center={socketData.position}
-            zoom={20}
-          ></GoogleMap>
-        </LoadScript>
-        <button onClick={getPosition}>位置情報取得</button>
-        <br />
-        {/* <button onClick={startSendPosition}>位置情報送信を開始</button> */}
+        <h1>ERROR:Can not get API KEY</h1>
+
       </div>
     );
   }
@@ -133,18 +340,3 @@ const MyComponent = ({ lat, lng }: prop) => {
 
 export default MyComponent;
 
-// export const getServerSideProps: GetServerSideProps = async () => {
-//   let myPosition: prop = {
-//     lat: 0,
-//     lng: 0
-//   };
-//   navigator.geolocation.getCurrentPosition(
-//     function (position) {
-//       myPosition.lat = position.coords.latitude;
-//       myPosition.lng = position.coords.longitude;
-//     }, () => console.log("error"));
-
-//   return {
-//     props: myPosition,
-//   };
-// };
