@@ -1,4 +1,5 @@
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
+
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
@@ -8,6 +9,7 @@ type socketDataType = {
   id: string;
   name: string;
   roomId: string;
+
   position: {
     lat: number;
     lng: number;
@@ -80,6 +82,7 @@ const MyComponent = () => {
         "Is ClientDatas an array? after set" + Array.isArray(allClientDatas)
       );
       // setClientDatas(Array.from(allClientDatas));
+
     });
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -89,6 +92,7 @@ const MyComponent = () => {
   useEffect(() => {
     if (uuid !== undefined && socketData.roomId !== roomId)
       setRoomId(() => uuidPath);
+
     socket.emitWithAck("changeData", socketData);
   }, [socketData]);
   useEffect(() => {
@@ -119,10 +123,12 @@ const MyComponent = () => {
     navigator.geolocation.getCurrentPosition((position) => {
       setSocketData((prev: socketDataType) => ({
         ...prev,
+
         position: {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
         },
+
       })),
         () => console.log("error");
     });
@@ -131,10 +137,12 @@ const MyComponent = () => {
       ...prev,
       roomId: uuidPath,
     }));
+
     console.log(socketData);
   };
 
   const sendPosition = () => {
+
     console.log("start");
     setSending(true);
     intervalRef.current = window.setInterval(() => {
@@ -324,9 +332,11 @@ const MyComponent = () => {
     return (
       <div>
         <h1>ERROR:Can not get API KEY</h1>
+
       </div>
     );
   }
 };
 
 export default MyComponent;
+
