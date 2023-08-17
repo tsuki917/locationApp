@@ -1,24 +1,13 @@
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
-import { GOOGLE_FONT_PROVIDER } from "next/dist/shared/lib/constants";
 import { useRouter } from "next/router";
-import {useCallback, useEffect, useRef, useState } from "react";
-import { io } from "socket.io-client";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { io, Socket } from "socket.io-client";
 import { uuid } from "uuidv4";
-
-
-const containerStyle = {
-  width: "300px",
-  height: "200px",
-};
-console.log("socketOn")
-const socket = io("http://localhost:5000");
-
-
 
 type socketDataType = {
   id: string;
   name: string;
-  roomId:string;
+  roomId: string;
   position: {
     lat: number;
     lng: number;
@@ -26,41 +15,45 @@ type socketDataType = {
   selfIntroduce: string;
 };
 
+const socket: Socket = io("http://localhost:5000");
 const MyComponent = () => {
-
+  const containerStyle = {
+    width: 800,
+    height: 300,
+  };
   const testRouter = useRouter();
   const test = testRouter.asPath;
   const uuidPath = test.split("uuid=")[1];
   console.log(uuidPath);
 
-  const [roomId,setRoomId] = useState<string>(uuidPath); 
-  
-
-
-
-
+  const [roomId, setRoomId] = useState<string>(uuidPath);
 
   const [name, setName] = useState("");
   const [selfIntro, setSelfIntro] = useState("");
   const [socketData, setSocketData] = useState<socketDataType>({
     id: "",
     name: "noName",
-    roomId:uuidPath,
+    roomId: uuidPath,
     position: { lat: 0, lng: 0 },
     selfIntroduce: "よろしくお願いします！",
   });
   const [ClientDatas, setClientDatas] = useState<socketDataType[]>([]);
+
   const [isEdit, setIsEdit] = useState<boolean>(false);
-  const [sending,setSending] = useState<boolean>(false);
+  const [sending, setSending] = useState<boolean>(false);
+  const [targetPerson, setTargetPerson] = useState<socketDataType>();
   const intervalRef = useRef<number>();
 
-  //get socket id from server 
+  //get socket id from server
   socket.once("init", (initId: string) => {
     console.log("init");
-    
+
     setSocketData((prevData: socketDataType) => ({ ...prevData, id: initId }));
-    setSocketData((prevData: socketDataType) => ({ ...prevData, roomId: uuidPath}));
-    socket.emitWithAck("init_res",socketData);
+    setSocketData((prevData: socketDataType) => ({
+      ...prevData,
+      roomId: uuidPath,
+    }));
+    socket.emit("init_res", socketData);
   });
 
   //initialize postion and set event to get AllclientData from server
@@ -78,25 +71,30 @@ const MyComponent = () => {
     });
 
     socket.on("send_AllClientData", (allClientDatas: socketDataType[]) => {
+      console.log(
+        "Is ClientDatas an array? pre set" + Array.isArray(allClientDatas)
+      );
+
       setClientDatas(allClientDatas);
-      console.log("allClientDatas");
+      console.log(
+        "Is ClientDatas an array? after set" + Array.isArray(allClientDatas)
+      );
+      // setClientDatas(Array.from(allClientDatas));
     });
-    
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  
 
-  
-  //when user's data has changed ,this sends user's data to server  
+  //when user's data has changed ,this sends user's data to server
   useEffect(() => {
-    if(uuid!==undefined && socketData.roomId!==roomId)setRoomId(()=>uuidPath);
+    if (uuid !== undefined && socketData.roomId !== roomId)
+      setRoomId(() => uuidPath);
     socket.emitWithAck("changeData", socketData);
   }, [socketData]);
   useEffect(() => {
-    setSocketData((prev:socketDataType)=>({...prev,roomId:uuidPath}));
-    socket.emitWithAck("joinRoom",roomId);
+    setSocketData((prev: socketDataType) => ({ ...prev, roomId: uuidPath }));
+    socket.emitWithAck("joinRoom", roomId);
   }, [roomId]);
-  
 
   const handleSelfDatas = () => {
     if (name !== "") {
@@ -115,9 +113,9 @@ const MyComponent = () => {
       console.log("self move");
     }
   };
-  
 
   const getPosition = () => {
+    console.log(ClientDatas);
     navigator.geolocation.getCurrentPosition((position) => {
       setSocketData((prev: socketDataType) => ({
         ...prev,
@@ -129,14 +127,14 @@ const MyComponent = () => {
         () => console.log("error");
     });
     console.log("getPosition");
-    setSocketData((prev:socketDataType)=>({
+    setSocketData((prev: socketDataType) => ({
       ...prev,
-      roomId:uuidPath
-    }))
+      roomId: uuidPath,
+    }));
     console.log(socketData);
   };
 
-  const sendPosition = ()=> {
+  const sendPosition = () => {
     console.log("start");
     setSending(true);
     intervalRef.current = window.setInterval(() => {
@@ -148,31 +146,39 @@ const MyComponent = () => {
             lng: position.coords.longitude,
           },
         })),
-        () => console.log("error");
+          () => console.log("error");
       });
       console.log("sendPosition");
     }, 8000);
     console.log(intervalRef.current);
   };
 
-  const stopSendPosition = ()=>{
+  const stopSendPosition = () => {
     console.log("stop");
     console.log(intervalRef.current);
-    if(intervalRef.current)window.clearInterval(intervalRef.current);
+    if (intervalRef.current) window.clearInterval(intervalRef.current);
     setSending(false);
   };
 
+  const reqestAllClientData = () => {
+    console.log("req allClientData");
+    socket.emit("requestAllClientData");
+  };
 
+  const getTargetPerson = (key: number) => {
+    console.log(key);
+    setTargetPerson(ClientDatas[key]);
+  };
 
   if (process.env.NEXT_PUBLIC_GOOGLE_MAP_API_KEY !== undefined) {
     const API_KEY: string = process.env.NEXT_PUBLIC_GOOGLE_MAP_API_KEY;
     console.log("local");
     return (
-      <div className="border w-[375px]  ">
-        <div className=" m-1 ml-4 text-left text-3xl font-bold underline">
+      <div className="border  m2">
+        <div className=" ml-4 text-left text-3xl font-bold underline">
           My Profile
         </div>
-        <div className="border-2 border-black shadow-sm  rounded-xl m-3 ml-[37.5px] mr-[37.5px] p-2 w-[300px] text-left  ">
+        <div className="border-2 border-black shadow-sm  rounded-xl m-3  text-left  ">
           <div id="name" className="   ml-2 inline-block">
             <h2 className="font-bold">名前</h2>
             <p className="font-bold ml-5">{socketData.name}</p>
@@ -184,15 +190,7 @@ const MyComponent = () => {
             <p className="ml-3">{socketData.selfIntroduce}</p>
           </div>
           <div id="edit-intro">
-            {!isEdit && (
-              <button
-                className="inline-block  bg-gradient-to-br from-blue-300 to-blue-800 hover:bg-gradient-to-tl text-white rounded px-4 py-2 my-2 m-auto"
-                onClick={() => setIsEdit(true)}
-              >
-                編集
-              </button>
-            )}
-            {isEdit && (
+            {isEdit ? (
               <div id="editting" className=" mt-7 border">
                 <p className="m-2 font-bold">変更の入力</p>
                 <input
@@ -226,70 +224,98 @@ const MyComponent = () => {
                   送信
                 </button>
               </div>
+            ) : (
+              <button
+                className="inline-block  bg-gradient-to-br from-blue-300 to-blue-800 hover:bg-gradient-to-tl text-white rounded px-4 py-2 my-2 m-auto"
+                onClick={() => setIsEdit(true)}
+              >
+                編集
+              </button>
             )}
           </div>
         </div>
 
-        <div className="ml-[37.5px] mr-[37.5px]">
+        <div className="m-3 w-2/3">
           <h2 className="font-bold text-3xl m-2 underline">Map</h2>
-          <LoadScript googleMapsApiKey={API_KEY}>
-            <GoogleMap
-              mapContainerStyle={containerStyle}
-              center={socketData.position}
-              zoom={19}
-            >
-              <Marker position={socketData.position}></Marker>
-            </GoogleMap>
-          </LoadScript>
+          <div className="flex justify-around">
+            <LoadScript googleMapsApiKey={API_KEY}>
+              <GoogleMap
+                mapContainerStyle={containerStyle}
+                center={socketData.position}
+                zoom={19}
+              >
+                <Marker position={socketData.position}></Marker>
+                {targetPerson && (
+                  <Marker position={targetPerson.position}></Marker>
+                )}
+              </GoogleMap>
+            </LoadScript>
+          </div>
+        </div>
+        <div className="text-right">
+          <button
+            type="button"
+            className="inline-block bg-gradient-to-br from-green-300 to-teal-700 hover:bg-gradient-to-tl text-white rounded px-4 py-2 mb-2  mt-4 ml-2"
+            onClick={getPosition}
+          >
+            更新
+          </button>
         </div>
 
         <div className="text-center mr-8">
-        <div className="text-right">
-            <button  className="inline-block bg-gradient-to-br from-green-300 to-teal-700 hover:bg-gradient-to-tl text-white rounded px-4 py-2 mb-2  mt-4 ml-2" onClick={getPosition}>更新</button>
-          </div>
-          {!sending&&(
+          {!sending && (
             <button
-            onClick={sendPosition}
-            className=" inline-block bg-gradient-to-br from-blue-300 to-blue-800 hover:bg-gradient-to-tl text-white rounded px-4 py-2 my-2  ml-2"
-          >
-            位置情報送信を開始
-          </button>
+              onClick={sendPosition}
+              className=" inline-block bg-gradient-to-br from-blue-300 to-blue-800 hover:bg-gradient-to-tl text-white rounded px-4 py-2 my-2  ml-2"
+            >
+              位置情報送信を開始
+            </button>
           )}
-          {sending&&(
+          {sending && (
             <button
-            onClick={stopSendPosition}
-            className=" inline-block bg-gradient-to-br from-red-400 to-red-600 hover:bg-gradient-to-tl text-white rounded px-4 py-2 my-2  ml-2"
-          >
-            位置情報送信を停止
-          </button>
+              onClick={stopSendPosition}
+              className=" inline-block bg-gradient-to-br from-red-400 to-red-600 hover:bg-gradient-to-tl text-white rounded px-4 py-2 my-2  ml-2"
+            >
+              位置情報送信を停止
+            </button>
           )}
-          
         </div>
 
-        <div className=" w-[300px] ml-[37.5px] mr-[37.5px] my-4">
+        <div className=" w-1/2 m-3 my-4">
           <div className="text-left">
             <h2 className="font-bold text-3xl underline">ProfileList</h2>
           </div>
-          {ClientDatas.filter(
-            (data) => data.position.lat !== 0 && data.position.lng !== 0
-          ).map((clientData, key) => {
-            
-            if(clientData.id !==socketData.id){
-              return (
-                <div className="border-2  m-3 p-3 rounded-xl" key={key}>
-                  <h1 className="row-auto col-auto text-xl">{clientData.name}</h1>
-                  <h2>{clientData.selfIntroduce}</h2>
-                  <div className="text-center">
-                    <button className=" inline-block bg-gradient-to-br from-blue-300 to-blue-800 hover:bg-gradient-to-tl text-white rounded px-4 py-2 mb-2 mt-4 ml-2">
-                      位置情報取得
-                    </button>
+          <div className="flex justify-center ">
+            {ClientDatas.map((clientData, key) => {
+              if (clientData.id !== socketData.id) {
+                return (
+                  <div className="border-2 w-2/3 m-3 p-3 rounded-xl" key={key}>
+                    <h1 className="row-auto col-auto text-xl">
+                      {clientData.name}
+                    </h1>
+                    <h2>{clientData.selfIntroduce}</h2>
+                    <div className="text-center">
+                      <button
+                        onClick={() => {
+                          getTargetPerson(key);
+                        }}
+                        className=" inline-block bg-gradient-to-br from-blue-300 to-blue-800 hover:bg-gradient-to-tl text-white rounded px-4 py-2 mb-2 mt-4 ml-2"
+                      >
+                        位置情報取得
+                      </button>
+                    </div>
                   </div>
-                </div>
-              );
-            }
-          })}
+                );
+              }
+            })}
+          </div>
           <div className="text-right m-2">
-            <button  className="inline-block bg-gradient-to-br from-green-300 to-teal-700 hover:bg-gradient-to-tl text-white rounded px-4 py-2 mb-2 mt-4 ml-2" onClick={getPosition}>更新</button>
+            <button
+              className="inline-block bg-gradient-to-br from-green-300 to-teal-700 hover:bg-gradient-to-tl text-white rounded px-4 py-2 mb-2 mt-4 ml-2"
+              onClick={getPosition}
+            >
+              更新
+            </button>
           </div>
         </div>
       </div>
