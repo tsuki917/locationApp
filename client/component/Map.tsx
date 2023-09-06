@@ -1,3 +1,4 @@
+"use client";
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
 
 import { useRouter } from "next/router";
@@ -242,25 +243,24 @@ const MyComponent = () => {
           <h2 className="font-bold text-3xl m-2 underline">Map</h2>
           <div className="flex justify-around">
             <LoadScript googleMapsApiKey={API_KEY}>
-              <GoogleMap
-                mapContainerStyle={containerStyle}
-                center={socketData.position}
-                zoom={20}
-              >
-                {window.google && window.google.maps && (
+              {typeof window !== undefined && (
+                <GoogleMap
+                  mapContainerStyle={containerStyle}
+                  center={socketData.position}
+                  zoom={20}
+                >
                   <Marker
                     position={socketData.position}
                     icon={{
                       url: "/user.png",
-                      scaledSize: new window.google.maps.Size(40, 40),
                     }}
                   ></Marker>
-                )}
 
-                {targetPerson && (
-                  <Marker position={targetPerson.position}></Marker>
-                )}
-              </GoogleMap>
+                  {targetPerson && (
+                    <Marker position={targetPerson.position}></Marker>
+                  )}
+                </GoogleMap>
+              )}
             </LoadScript>
           </div>
           <div className="border flex justify-end">
