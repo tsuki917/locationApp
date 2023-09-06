@@ -18,8 +18,19 @@ type socketDataType = {
   };
   selfIntroduce: string;
 };
+const environment = process.env.NODE_ENV || "development";
+let serverURL;
+if (environment === "development") {
+  serverURL = "http://localhost:5000";
+} else if (environment === "production") {
+  serverURL = "https://location-app-five.vercel.app/";
+}
+console.log("serverURL:" + serverURL);
+let socket: Socket;
 
-const socket: Socket = io("http://localhost:5000");
+if (serverURL !== undefined) {
+  socket = io(serverURL);
+}
 const MyComponent = () => {
   const containerStyle = {
     width: "100%",
