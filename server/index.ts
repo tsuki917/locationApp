@@ -39,7 +39,10 @@ import { Server, Socket } from "socket.io";
 
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:3000"],
+    origin: [
+      "http://localhost:3000",
+      "https://location-app-566a-client.vercel.app/",
+    ],
   },
   connectionStateRecovery: {
     // the backup duration of the sessions and the packets
