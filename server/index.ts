@@ -41,8 +41,7 @@ const io = new Server(server, {
   cors: {
     origin: [
       "http://localhost:3000",
-      "https://location-app-566a-client.vercel.app/",
-
+      "https://location-app-566a-client.vercel.app",
     ],
   },
   connectionStateRecovery: {
