@@ -66,7 +66,7 @@ type socketidTOroomIdType = {
   socketId: string;
   roomId: string;
 };
-const PORT = 5001;
+const PORT = 5000;
 const socketidTOroomId: socketidTOroomIdType[] = [];
 io.on("connection", (socket: Socket) => {
   const socket_id = socket.id;
