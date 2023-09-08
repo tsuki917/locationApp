@@ -10,7 +10,7 @@
     "outDir": "./dist",
     "rootDir": "./"
   },
-  "include": ["index.ts"],
+  "include": ["api/index.ts"],
   "exclude": ["node_modules"],
   "ts-node": {
     "esm": true,
