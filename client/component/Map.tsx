@@ -151,7 +151,6 @@ const MyComponent = () => {
   };
 
   const sendPosition = () => {
-    console.log("start");
     setSending(true);
     intervalRef.current = window.setInterval(() => {
       navigator.geolocation.getCurrentPosition((position) => {
