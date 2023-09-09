@@ -23,7 +23,7 @@ let serverURL;
 if (environment === "development") {
   serverURL = "http://localhost:5000";
 } else if (environment === "production") {
-  serverURL = "https://location-app-ten.vercel.app";
+  serverURL = "https://location-server-f9tv.onrender.com";
 }
 console.log("serverURL:" + serverURL);
 let socket: Socket;
