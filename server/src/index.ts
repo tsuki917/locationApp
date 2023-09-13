@@ -66,7 +66,7 @@ type socketidTOroomIdType = {
   socketId: string;
   roomId: string;
 };
-const PORT = 4000;
+const PORT = 5000;
 const socketidTOroomId: socketidTOroomIdType[] = [];
 io.on("connection", (socket: Socket) => {
   const socket_id = socket.id;
@@ -87,7 +87,6 @@ io.on("connection", (socket: Socket) => {
       const getData: Promise<socketDataType[]> = getRoomCollection(socketData);
       getData.then((getdata: socketDataType[]) => {
         const getArrayData: socketDataType[] = getdata;
-        console.log(Array.isArray(getArrayData), "getArrayData");
 
         io.to(socketData.roomId).emit("send_AllClientData", getArrayData);
       });
@@ -118,11 +117,9 @@ io.on("connection", (socket: Socket) => {
       });
     } else {
       socket.emit("init", socket_id);
-      console.log("false");
     }
   });
   socket.on("disconnect", () => {
-    console.log(socketidTOroomId);
     socketidTOroomId.forEach((data) => {
       if (data.socketId === socket.id) {
         const roomId_stg = data.roomId;
@@ -132,7 +129,7 @@ io.on("connection", (socket: Socket) => {
     });
   });
 });
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`server running on ${PORT}`);
 });
 
