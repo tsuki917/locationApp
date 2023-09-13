@@ -86,15 +86,25 @@ const MyComponent = () => {
     });
 
     socket.on("send_AllClientData", (allClientDatas: socketDataType[]) => {
-      console.log(
-        "Is ClientDatas an array? pre set" + Array.isArray(allClientDatas)
-      );
+      console.log("send_AllClientData");
+      console.log(targetPerson);
+      if (targetPerson !== undefined) {
+        console.log(targetPerson);
+        const targetPersonData = allClientDatas.find(
+          (ele) => ele.id === targetPerson.id
+        );
+        if (targetPersonData !== undefined) {
+          setTargetPerson((prev) => ({
+            id: targetPersonData.id,
+            name: targetPersonData.name,
+            roomId: targetPersonData.roomId,
+            position: targetPersonData.position,
+            selfIntroduce: targetPersonData.selfIntroduce,
+          }));
+        }
+      }
 
       setClientDatas(allClientDatas);
-      console.log(
-        "Is ClientDatas an array? after set" + Array.isArray(allClientDatas)
-      );
-      // setClientDatas(Array.from(allClientDatas));
     });
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -104,9 +114,9 @@ const MyComponent = () => {
   useEffect(() => {
     if (uuid !== undefined && socketData.roomId !== roomId)
       setRoomId(() => uuidPath);
-
     socket.emitWithAck("changeData", socketData);
   }, [socketData]);
+
   useEffect(() => {
     setSocketData((prev: socketDataType) => ({ ...prev, roomId: uuidPath }));
     socket.emitWithAck("joinRoom", roomId);
@@ -126,7 +136,6 @@ const MyComponent = () => {
       }));
 
       setSelfIntro("");
-      console.log("self move");
     }
   };
 
@@ -165,23 +174,25 @@ const MyComponent = () => {
       });
       console.log("sendPosition");
     }, 8000);
-    console.log(intervalRef.current);
   };
 
   const stopSendPosition = () => {
-    console.log("stop");
-    console.log(intervalRef.current);
     if (intervalRef.current) window.clearInterval(intervalRef.current);
     setSending(false);
   };
 
   const reqestAllClientData = () => {
-    console.log("req allClientData");
     socket.emit("requestAllClientData");
   };
 
   const getTargetPerson = (key: number) => {
-    setTargetPerson(ClientDatas[key]);
+    setTargetPerson(() => ({
+      id: ClientDatas[key].id,
+      name: ClientDatas[key].name,
+      roomId: ClientDatas[key].roomId,
+      position: ClientDatas[key].position,
+      selfIntroduce: ClientDatas[key].selfIntroduce,
+    }));
   };
 
   if (process.env.NEXT_PUBLIC_GOOGLE_MAP_API_KEY !== undefined) {
@@ -300,15 +311,39 @@ const MyComponent = () => {
           </div>
         </div>
 
-        <div className="  mt-3">
+        <div className=" border mt-3">
           <div className="text-left">
             <h2 className="font-bold text-3xl underline">ProfileList</h2>
           </div>
-          <div className="flex justify-center ">
+
+          <div className="flex justify-center border w-full">
+            {targetPerson && (
+              <div className="border-2 border-red-600  w-full m-3 p-3 rounded-xl">
+                <h2 className="text-red-600">選択中</h2>
+                <h1 className="row-auto col-auto text-xl">
+                  {targetPerson.name}
+                </h1>
+                <h2>{targetPerson.selfIntroduce}</h2>
+                {/* <div className="text-center">
+                <button
+                  onClick={() => {
+                    getTargetPerson(key);
+                  }}
+                  className=" inline-block bg-gradient-to-br from-blue-300 to-blue-800 hover:bg-gradient-to-tl text-white rounded px-4 py-2 mb-2 mt-4 ml-2"
+                >
+                  位置情報取得
+                </button>
+              </div> */}
+              </div>
+            )}
+
             {ClientDatas.map((clientData, key) => {
-              if (clientData.id !== socketData.id) {
+              if (
+                clientData.id !== socketData.id &&
+                clientData.id !== targetPerson?.id
+              ) {
                 return (
-                  <div className="border-2 w-2/3 m-3 p-3 rounded-xl" key={key}>
+                  <div className="border-2 w-full m-3 p-3 rounded-xl" key={key}>
                     <h1 className="row-auto col-auto text-xl">
                       {clientData.name}
                     </h1>
@@ -336,6 +371,13 @@ const MyComponent = () => {
               更新
             </button>
           </div>
+          <button
+            onClick={() => {
+              console.log(targetPerson);
+            }}
+          >
+            target
+          </button>
         </div>
       </div>
     );
