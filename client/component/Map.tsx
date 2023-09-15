@@ -18,6 +18,10 @@ type socketDataType = {
   };
   selfIntroduce: string;
 };
+type position = {
+  lat: number;
+  lng: number;
+};
 const environment = process.env.NODE_ENV || "development";
 let serverURL;
 if (environment === "development") {
@@ -56,7 +60,10 @@ const MyComponent = () => {
 
   const [isEdit, setIsEdit] = useState<boolean>(false);
   const [sending, setSending] = useState<boolean>(false);
-  const [targetPerson, setTargetPerson] = useState<socketDataType>();
+  const targetPersonId = useRef<String>("");
+  const [targetPersonName, setTargetPersonName] = useState<String>();
+  const [targetPersonSelf, setTargetPersonSelf] = useState<String>();
+  const [targetPersonPosition, setTargetPersonPosition] = useState<position>();
   const intervalRef = useRef<number>();
 
   //get socket id from server
@@ -87,23 +94,15 @@ const MyComponent = () => {
 
     socket.on("send_AllClientData", (allClientDatas: socketDataType[]) => {
       console.log("send_AllClientData");
-      console.log(targetPerson);
-      if (targetPerson !== undefined) {
-        console.log(targetPerson);
-        const targetPersonData = allClientDatas.find(
-          (ele) => ele.id === targetPerson.id
-        );
-        if (targetPersonData !== undefined) {
-          setTargetPerson((prev) => ({
-            id: targetPersonData.id,
-            name: targetPersonData.name,
-            roomId: targetPersonData.roomId,
-            position: targetPersonData.position,
-            selfIntroduce: targetPersonData.selfIntroduce,
-          }));
-        }
-      }
-
+      console.log(targetPersonId);
+      const targetData = allClientDatas.find(
+        (ele) => ele.id === targetPersonId.current
+      );
+      console.log("targetData");
+      console.log(targetData);
+      setTargetPersonName(targetData?.name);
+      setTargetPersonSelf(targetData?.selfIntroduce);
+      setTargetPersonPosition(targetData?.position);
       setClientDatas(allClientDatas);
     });
 
@@ -125,9 +124,7 @@ const MyComponent = () => {
   const handleSelfDatas = () => {
     if (name !== "") {
       setSocketData((prev: socketDataType) => ({ ...prev, name: name }));
-
       setName("");
-      console.log("move");
     }
     if (selfIntro !== "") {
       setSocketData((prev: socketDataType) => ({
@@ -185,14 +182,13 @@ const MyComponent = () => {
     socket.emit("requestAllClientData");
   };
 
-  const getTargetPerson = (key: number) => {
-    setTargetPerson(() => ({
-      id: ClientDatas[key].id,
-      name: ClientDatas[key].name,
-      roomId: ClientDatas[key].roomId,
-      position: ClientDatas[key].position,
-      selfIntroduce: ClientDatas[key].selfIntroduce,
-    }));
+  const getTargetPersonId = (key: number) => {
+    console.log("getTargetPersonId");
+
+    targetPersonId.current = ClientDatas[key].id;
+    setTargetPersonName(ClientDatas[key].name);
+    setTargetPersonPosition(ClientDatas[key].position);
+    setTargetPersonSelf(ClientDatas[key].selfIntroduce);
   };
 
   if (process.env.NEXT_PUBLIC_GOOGLE_MAP_API_KEY !== undefined) {
@@ -277,8 +273,8 @@ const MyComponent = () => {
                     }}
                   ></Marker>
 
-                  {targetPerson && (
-                    <Marker position={targetPerson.position}></Marker>
+                  {targetPersonPosition && (
+                    <Marker position={targetPersonPosition}></Marker>
                   )}
                 </GoogleMap>
               )}
@@ -317,17 +313,17 @@ const MyComponent = () => {
           </div>
 
           <div className="flex justify-center border w-full">
-            {targetPerson && (
+            {targetPersonName && (
               <div className="border-2 border-red-600  w-full m-3 p-3 rounded-xl">
                 <h2 className="text-red-600">選択中</h2>
                 <h1 className="row-auto col-auto text-xl">
-                  {targetPerson.name}
+                  {targetPersonName}
                 </h1>
-                <h2>{targetPerson.selfIntroduce}</h2>
+                <h2>{targetPersonSelf}</h2>
                 {/* <div className="text-center">
                 <button
                   onClick={() => {
-                    getTargetPerson(key);
+                    getTargetPersonId(key);
                   }}
                   className=" inline-block bg-gradient-to-br from-blue-300 to-blue-800 hover:bg-gradient-to-tl text-white rounded px-4 py-2 mb-2 mt-4 ml-2"
                 >
@@ -340,7 +336,7 @@ const MyComponent = () => {
             {ClientDatas.map((clientData, key) => {
               if (
                 clientData.id !== socketData.id &&
-                clientData.id !== targetPerson?.id
+                clientData.id !== targetPersonId.current
               ) {
                 return (
                   <div className="border-2 w-full m-3 p-3 rounded-xl" key={key}>
@@ -351,7 +347,7 @@ const MyComponent = () => {
                     <div className="text-center">
                       <button
                         onClick={() => {
-                          getTargetPerson(key);
+                          getTargetPersonId(key);
                         }}
                         className=" inline-block bg-gradient-to-br from-blue-300 to-blue-800 hover:bg-gradient-to-tl text-white rounded px-4 py-2 mb-2 mt-4 ml-2"
                       >
@@ -373,7 +369,7 @@ const MyComponent = () => {
           </div>
           <button
             onClick={() => {
-              console.log(targetPerson);
+              console.log(targetPersonName);
             }}
           >
             target
