@@ -194,7 +194,7 @@ const MyComponent = () => {
   if (process.env.NEXT_PUBLIC_GOOGLE_MAP_API_KEY !== undefined) {
     const API_KEY: string = process.env.NEXT_PUBLIC_GOOGLE_MAP_API_KEY;
     return (
-      <div className="border  w-4/5 mx-auto ">
+      <div className="  w-4/5 mx-auto ">
         <div className="">
           <div className="  text-left text-3xl font-bold underline">
             My Profile
@@ -307,14 +307,14 @@ const MyComponent = () => {
           </div>
         </div>
 
-        <div className=" border mt-3">
+        <div className="  mt-3">
           <div className="text-left">
             <h2 className="font-bold text-3xl underline">ProfileList</h2>
           </div>
 
-          <div className="flex justify-center border w-full">
+          <div className="flex justify-center  w-full flex-col">
             {targetPersonName && (
-              <div className="border-2 border-red-600  w-full m-3 p-3 rounded-xl">
+              <div className="border-2 border-red-600  w-full my-3 p-3 mx-auto rounded-xl">
                 <h2 className="text-red-600">選択中</h2>
                 <h1 className="row-auto col-auto text-xl">
                   {targetPersonName}
@@ -339,7 +339,10 @@ const MyComponent = () => {
                 clientData.id !== targetPersonId.current
               ) {
                 return (
-                  <div className="border-2 w-full m-3 p-3 rounded-xl" key={key}>
+                  <div
+                    className="border-2 w-full my-3 p-3 mx-auto rounded-xl"
+                    key={key}
+                  >
                     <h1 className="row-auto col-auto text-xl">
                       {clientData.name}
                     </h1>
