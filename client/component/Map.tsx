@@ -18,6 +18,10 @@ type socketDataType = {
   };
   selfIntroduce: string;
 };
+type position = {
+  lat: number;
+  lng: number;
+};
 const environment = process.env.NODE_ENV || "development";
 let serverURL;
 if (environment === "development") {
@@ -56,7 +60,10 @@ const MyComponent = () => {
 
   const [isEdit, setIsEdit] = useState<boolean>(false);
   const [sending, setSending] = useState<boolean>(false);
-  const [targetPerson, setTargetPerson] = useState<socketDataType>();
+  const targetPersonId = useRef<String>("");
+  const [targetPersonName, setTargetPersonName] = useState<String>();
+  const [targetPersonSelf, setTargetPersonSelf] = useState<String>();
+  const [targetPersonPosition, setTargetPersonPosition] = useState<position>();
   const intervalRef = useRef<number>();
 
   //get socket id from server
@@ -86,15 +93,17 @@ const MyComponent = () => {
     });
 
     socket.on("send_AllClientData", (allClientDatas: socketDataType[]) => {
-      console.log(
-        "Is ClientDatas an array? pre set" + Array.isArray(allClientDatas)
+      console.log("send_AllClientData");
+      console.log(targetPersonId);
+      const targetData = allClientDatas.find(
+        (ele) => ele.id === targetPersonId.current
       );
-
+      console.log("targetData");
+      console.log(targetData);
+      setTargetPersonName(targetData?.name);
+      setTargetPersonSelf(targetData?.selfIntroduce);
+      setTargetPersonPosition(targetData?.position);
       setClientDatas(allClientDatas);
-      console.log(
-        "Is ClientDatas an array? after set" + Array.isArray(allClientDatas)
-      );
-      // setClientDatas(Array.from(allClientDatas));
     });
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -104,9 +113,9 @@ const MyComponent = () => {
   useEffect(() => {
     if (uuid !== undefined && socketData.roomId !== roomId)
       setRoomId(() => uuidPath);
-
     socket.emitWithAck("changeData", socketData);
   }, [socketData]);
+
   useEffect(() => {
     setSocketData((prev: socketDataType) => ({ ...prev, roomId: uuidPath }));
     socket.emitWithAck("joinRoom", roomId);
@@ -115,9 +124,7 @@ const MyComponent = () => {
   const handleSelfDatas = () => {
     if (name !== "") {
       setSocketData((prev: socketDataType) => ({ ...prev, name: name }));
-
       setName("");
-      console.log("move");
     }
     if (selfIntro !== "") {
       setSocketData((prev: socketDataType) => ({
@@ -126,7 +133,6 @@ const MyComponent = () => {
       }));
 
       setSelfIntro("");
-      console.log("self move");
     }
   };
 
@@ -165,23 +171,24 @@ const MyComponent = () => {
       });
       console.log("sendPosition");
     }, 8000);
-    console.log(intervalRef.current);
   };
 
   const stopSendPosition = () => {
-    console.log("stop");
-    console.log(intervalRef.current);
     if (intervalRef.current) window.clearInterval(intervalRef.current);
     setSending(false);
   };
 
   const reqestAllClientData = () => {
-    console.log("req allClientData");
     socket.emit("requestAllClientData");
   };
 
-  const getTargetPerson = (key: number) => {
-    setTargetPerson(ClientDatas[key]);
+  const getTargetPersonId = (key: number) => {
+    console.log("getTargetPersonId");
+
+    targetPersonId.current = ClientDatas[key].id;
+    setTargetPersonName(ClientDatas[key].name);
+    setTargetPersonPosition(ClientDatas[key].position);
+    setTargetPersonSelf(ClientDatas[key].selfIntroduce);
   };
 
   if (process.env.NEXT_PUBLIC_GOOGLE_MAP_API_KEY !== undefined) {
@@ -266,8 +273,8 @@ const MyComponent = () => {
                     }}
                   ></Marker>
 
-                  {targetPerson && (
-                    <Marker position={targetPerson.position}></Marker>
+                  {targetPersonPosition && (
+                    <Marker position={targetPersonPosition}></Marker>
                   )}
                 </GoogleMap>
               )}
@@ -300,15 +307,39 @@ const MyComponent = () => {
           </div>
         </div>
 
-        <div className="  mt-3">
+        <div className=" border mt-3">
           <div className="text-left">
             <h2 className="font-bold text-3xl underline">ProfileList</h2>
           </div>
-          <div className="flex justify-center ">
+
+          <div className="flex justify-center border w-full">
+            {targetPersonName && (
+              <div className="border-2 border-red-600  w-full m-3 p-3 rounded-xl">
+                <h2 className="text-red-600">選択中</h2>
+                <h1 className="row-auto col-auto text-xl">
+                  {targetPersonName}
+                </h1>
+                <h2>{targetPersonSelf}</h2>
+                {/* <div className="text-center">
+                <button
+                  onClick={() => {
+                    getTargetPersonId(key);
+                  }}
+                  className=" inline-block bg-gradient-to-br from-blue-300 to-blue-800 hover:bg-gradient-to-tl text-white rounded px-4 py-2 mb-2 mt-4 ml-2"
+                >
+                  位置情報取得
+                </button>
+              </div> */}
+              </div>
+            )}
+
             {ClientDatas.map((clientData, key) => {
-              if (clientData.id !== socketData.id) {
+              if (
+                clientData.id !== socketData.id &&
+                clientData.id !== targetPersonId.current
+              ) {
                 return (
-                  <div className="border-2 w-2/3 m-3 p-3 rounded-xl" key={key}>
+                  <div className="border-2 w-full m-3 p-3 rounded-xl" key={key}>
                     <h1 className="row-auto col-auto text-xl">
                       {clientData.name}
                     </h1>
@@ -316,7 +347,7 @@ const MyComponent = () => {
                     <div className="text-center">
                       <button
                         onClick={() => {
-                          getTargetPerson(key);
+                          getTargetPersonId(key);
                         }}
                         className=" inline-block bg-gradient-to-br from-blue-300 to-blue-800 hover:bg-gradient-to-tl text-white rounded px-4 py-2 mb-2 mt-4 ml-2"
                       >
@@ -336,6 +367,13 @@ const MyComponent = () => {
               更新
             </button>
           </div>
+          <button
+            onClick={() => {
+              console.log(targetPersonName);
+            }}
+          >
+            target
+          </button>
         </div>
       </div>
     );
