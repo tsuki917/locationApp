@@ -5,7 +5,6 @@ import { useRouter } from "next/router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { uuid } from "uuidv4";
-import image_pin from "../public/user.png";
 
 type socketDataType = {
   id: string;
@@ -269,12 +268,15 @@ const MyComponent = () => {
                   <Marker
                     position={socketData.position}
                     icon={{
-                      url: "/user.png",
+                      url: "/targetPin.png",
                     }}
-                  ></Marker>
+                  />
 
                   {targetPersonPosition && (
-                    <Marker position={targetPersonPosition}></Marker>
+                    <Marker
+                      position={targetPersonPosition}
+                      icon={{ url: "/user.png" }}
+                    />
                   )}
                 </GoogleMap>
               )}
